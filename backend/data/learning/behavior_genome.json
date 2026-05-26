@@ -1,0 +1,8 @@
+{
+  "verbosity_weight": 0.5,
+  "proactivity_threshold": 0.6749391352403067,
+  "formality_index": 0.3564183074051145,
+  "empathy_multiplier": 1.0,
+  "generation": 3,
+  "fitness_history": []
+}

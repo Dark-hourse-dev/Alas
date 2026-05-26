@@ -1,0 +1,679 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "Himanshu",
+      "type": "person",
+      "created_at": "2026-05-25T10:55:17.744191+00:00",
+      "last_seen": "2026-05-25T12:35:50.474889+00:00",
+      "mention_count": 7,
+      "source": "conversation",
+      "properties": {},
+      "id": "himanshu"
+    },
+    {
+      "label": "Adaptive AI",
+      "type": "concept",
+      "created_at": "2026-05-25T10:55:17.744498+00:00",
+      "last_seen": "2026-05-25T10:55:17.744498+00:00",
+      "mention_count": 1,
+      "source": "conversation",
+      "properties": {},
+      "id": "adaptive_ai"
+    },
+    {
+      "label": "Robotics",
+      "type": "topic",
+      "created_at": "2026-05-25T10:55:17.744745+00:00",
+      "last_seen": "2026-05-25T12:40:05.999864+00:00",
+      "mention_count": 3,
+      "source": "conversation",
+      "properties": {},
+      "id": "robotics"
+    },
+    {
+      "label": "AI system",
+      "type": "concept",
+      "created_at": "2026-05-25T11:04:17.783942+00:00",
+      "last_seen": "2026-05-25T12:34:12.319835+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "ai_system"
+    },
+    {
+      "label": "User",
+      "type": "person",
+      "created_at": "2026-05-25T11:04:44.594487+00:00",
+      "last_seen": "2026-05-25T12:40:08.413245+00:00",
+      "mention_count": 22,
+      "source": "consolidation",
+      "properties": {},
+      "id": "user"
+    },
+    {
+      "label": "Assistant",
+      "type": "person",
+      "created_at": "2026-05-25T11:04:44.594879+00:00",
+      "last_seen": "2026-05-25T12:40:08.414292+00:00",
+      "mention_count": 20,
+      "source": "consolidation",
+      "properties": {},
+      "id": "assistant"
+    },
+    {
+      "label": "AI systems",
+      "type": "concept",
+      "created_at": "2026-05-25T11:04:44.602772+00:00",
+      "last_seen": "2026-05-25T12:34:39.128596+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "ai_systems"
+    },
+    {
+      "label": "AI",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.498183+00:00",
+      "last_seen": "2026-05-25T12:40:05.998757+00:00",
+      "mention_count": 10,
+      "source": "consolidation",
+      "properties": {},
+      "id": "ai"
+    },
+    {
+      "label": "Artificial Intelligence",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.506655+00:00",
+      "last_seen": "2026-05-25T12:37:53.525478+00:00",
+      "mention_count": 5,
+      "source": "consolidation",
+      "properties": {},
+      "id": "artificial_intelligence"
+    },
+    {
+      "label": "intelligence",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.507168+00:00",
+      "last_seen": "2026-05-25T12:36:46.404385+00:00",
+      "mention_count": 5,
+      "source": "consolidation",
+      "properties": {},
+      "id": "intelligence"
+    },
+    {
+      "label": "machine",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.507651+00:00",
+      "last_seen": "2026-05-25T12:35:50.485634+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "machine"
+    },
+    {
+      "label": "computer system",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.508081+00:00",
+      "last_seen": "2026-05-25T12:35:50.486598+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "computer_system"
+    },
+    {
+      "label": "human-level intelligence",
+      "type": "goal",
+      "created_at": "2026-05-25T11:05:51.508545+00:00",
+      "last_seen": "2026-05-25T12:35:50.487462+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "human-level_intelligence"
+    },
+    {
+      "label": "Narrow AI",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.508995+00:00",
+      "last_seen": "2026-05-25T12:35:50.488388+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "narrow_ai"
+    },
+    {
+      "label": "Weak AI",
+      "type": "concept",
+      "created_at": "2026-05-25T11:05:51.509438+00:00",
+      "last_seen": "2026-05-25T12:35:50.489399+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "weak_ai"
+    },
+    {
+      "label": "image recognition",
+      "type": "topic",
+      "created_at": "2026-05-25T11:05:51.509851+00:00",
+      "last_seen": "2026-05-25T12:35:50.490235+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "image_recognition"
+    },
+    {
+      "label": "project",
+      "type": "goal",
+      "created_at": "2026-05-25T11:06:44.999911+00:00",
+      "last_seen": "2026-05-25T12:36:46.393017+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "project"
+    },
+    {
+      "label": "system",
+      "type": "concept",
+      "created_at": "2026-05-25T11:06:45.007035+00:00",
+      "last_seen": "2026-05-25T12:36:46.401599+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "system"
+    },
+    {
+      "label": "energy",
+      "type": "concept",
+      "created_at": "2026-05-25T11:06:45.008003+00:00",
+      "last_seen": "2026-05-25T12:36:46.402634+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "energy"
+    },
+    {
+      "label": "innovation",
+      "type": "concept",
+      "created_at": "2026-05-25T11:06:45.008712+00:00",
+      "last_seen": "2026-05-25T12:36:46.406661+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "innovation"
+    },
+    {
+      "label": "conversation",
+      "type": "event",
+      "created_at": "2026-05-25T11:06:45.009399+00:00",
+      "last_seen": "2026-05-25T12:36:46.407445+00:00",
+      "mention_count": 3,
+      "source": "consolidation",
+      "properties": {},
+      "id": "conversation"
+    },
+    {
+      "label": "challenge",
+      "type": "event",
+      "created_at": "2026-05-25T12:16:27.581020+00:00",
+      "last_seen": "2026-05-25T12:36:46.403490+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "challenge"
+    },
+    {
+      "label": "experience",
+      "type": "concept",
+      "created_at": "2026-05-25T12:16:27.582564+00:00",
+      "last_seen": "2026-05-25T12:36:46.405198+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "experience"
+    },
+    {
+      "label": "language",
+      "type": "topic",
+      "created_at": "2026-05-25T12:16:27.583373+00:00",
+      "last_seen": "2026-05-25T12:36:46.405944+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "language"
+    },
+    {
+      "label": "machine learning",
+      "type": "concept",
+      "created_at": "2026-05-25T12:17:58.264758+00:00",
+      "last_seen": "2026-05-25T12:37:53.524694+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "machine_learning"
+    },
+    {
+      "label": "birthday",
+      "type": "event",
+      "created_at": "2026-05-25T12:18:24.325891+00:00",
+      "last_seen": "2026-05-25T12:39:42.704527+00:00",
+      "mention_count": 4,
+      "source": "consolidation",
+      "properties": {},
+      "id": "birthday"
+    },
+    {
+      "label": "black",
+      "type": "concept",
+      "created_at": "2026-05-25T12:18:39.000728+00:00",
+      "last_seen": "2026-05-25T12:38:34.174591+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "black"
+    },
+    {
+      "label": "adaptive systems",
+      "type": "concept",
+      "created_at": "2026-05-25T12:20:25.677867+00:00",
+      "last_seen": "2026-05-25T12:40:06.000962+00:00",
+      "mention_count": 2,
+      "source": "consolidation",
+      "properties": {},
+      "id": "adaptive_systems"
+    },
+    {
+      "label": "Prix",
+      "type": "person",
+      "created_at": "2026-05-25T12:21:21.264568+00:00",
+      "last_seen": "2026-05-25T12:21:21.264568+00:00",
+      "mention_count": 1,
+      "source": "consolidation",
+      "properties": {},
+      "id": "prix"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "works_on",
+      "weight": 1.0,
+      "created_at": "2026-05-25T10:55:17.752618+00:00",
+      "last_reinforced": "2026-05-25T10:55:17.752618+00:00",
+      "reinforced_count": 1,
+      "context": "",
+      "source": "himanshu",
+      "target": "adaptive_ai"
+    },
+    {
+      "relation": "interested_in",
+      "weight": 1.0,
+      "created_at": "2026-05-25T10:55:17.753020+00:00",
+      "last_reinforced": "2026-05-25T10:55:17.753020+00:00",
+      "reinforced_count": 1,
+      "context": "",
+      "source": "himanshu",
+      "target": "robotics"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:04:17.791822+00:00",
+      "last_reinforced": "2026-05-25T12:34:12.328859+00:00",
+      "reinforced_count": 3,
+      "context": "User: Hello! My name is Himanshu. I am building an adaptive AI system.\nAssistant: Nice to meet you, Himanshu! I'm stoked to be talking to someone as passionate about building adaptive AI systems as I ",
+      "source": "himanshu",
+      "target": "ai_system"
+    },
+    {
+      "relation": "works_on",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.513504+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.496881+00:00",
+      "reinforced_count": 3,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "himanshu",
+      "target": "ai"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T10:55:17.753306+00:00",
+      "last_reinforced": "2026-05-25T10:55:17.753306+00:00",
+      "reinforced_count": 1,
+      "context": "",
+      "source": "adaptive_ai",
+      "target": "robotics"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:04:44.603465+00:00",
+      "last_reinforced": "2026-05-25T12:40:06.002057+00:00",
+      "reinforced_count": 20,
+      "context": "User: hi\nAssistant: It's great to see you again! I feel like we've just started our conversation, but it's wonderful to pick up where we left off. Remember how excited we were about building adaptive ",
+      "source": "user",
+      "target": "assistant"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.010088+00:00",
+      "last_reinforced": "2026-05-25T12:36:46.408832+00:00",
+      "reinforced_count": 4,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "user",
+      "target": "ai"
+    },
+    {
+      "relation": "part_of",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.014714+00:00",
+      "last_reinforced": "2026-05-25T11:06:45.014714+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "user",
+      "target": "conversation"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.587033+00:00",
+      "last_reinforced": "2026-05-25T12:36:46.410617+00:00",
+      "reinforced_count": 2,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "user",
+      "target": "project"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.588837+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.588837+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "user",
+      "target": "energy"
+    },
+    {
+      "relation": "learned_from",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.590949+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.590949+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "user",
+      "target": "experience"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:17:58.272499+00:00",
+      "last_reinforced": "2026-05-25T12:37:53.534071+00:00",
+      "reinforced_count": 2,
+      "context": "User: What is machine learning in one sentence?\nAssistant: Machine learning is a type of artificial intelligence that enables computers to learn and improve from experience by identifying patterns in ",
+      "source": "user",
+      "target": "machine_learning"
+    },
+    {
+      "relation": "prefers",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:18:39.009086+00:00",
+      "last_reinforced": "2026-05-25T12:38:34.183060+00:00",
+      "reinforced_count": 2,
+      "context": "User: my favrouite color is black\nAssistant: It seems like we've got a bit of a repetition going on here! You're saying \"black\" twice, but I think what you might be trying to say is that your favorite",
+      "source": "user",
+      "target": "black"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:04:44.603128+00:00",
+      "last_reinforced": "2026-05-25T12:40:08.415270+00:00",
+      "reinforced_count": 23,
+      "context": "User: hi\nAssistant: It's great to see you again! I feel like we've just started our conversation, but it's wonderful to pick up where we left off. Remember how excited we were about building adaptive ",
+      "source": "assistant",
+      "target": "user"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:04:44.603784+00:00",
+      "last_reinforced": "2026-05-25T12:34:39.132576+00:00",
+      "reinforced_count": 3,
+      "context": "User: hi\nAssistant: It's great to see you again! I feel like we've just started our conversation, but it's wonderful to pick up where we left off. Remember how excited we were about building adaptive ",
+      "source": "assistant",
+      "target": "ai_systems"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.011582+00:00",
+      "last_reinforced": "2026-05-25T12:36:46.411545+00:00",
+      "reinforced_count": 3,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "project"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.012320+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.588276+00:00",
+      "reinforced_count": 2,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "system"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.013097+00:00",
+      "last_reinforced": "2026-05-25T11:06:45.013097+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "energy"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:06:45.013933+00:00",
+      "last_reinforced": "2026-05-25T11:06:45.013933+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "innovation"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.589496+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.589496+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "challenge"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.590144+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.590144+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "intelligence"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:16:27.591760+00:00",
+      "last_reinforced": "2026-05-25T12:16:27.591760+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "language"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:17:58.273140+00:00",
+      "last_reinforced": "2026-05-25T12:37:53.535447+00:00",
+      "reinforced_count": 2,
+      "context": "User: What is machine learning in one sentence?\nAssistant: Machine learning is a type of artificial intelligence that enables computers to learn and improve from experience by identifying patterns in ",
+      "source": "assistant",
+      "target": "machine_learning"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:17:58.273819+00:00",
+      "last_reinforced": "2026-05-25T12:37:53.536244+00:00",
+      "reinforced_count": 2,
+      "context": "User: What is machine learning in one sentence?\nAssistant: Machine learning is a type of artificial intelligence that enables computers to learn and improve from experience by identifying patterns in ",
+      "source": "assistant",
+      "target": "artificial_intelligence"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:18:24.328845+00:00",
+      "last_reinforced": "2026-05-25T12:39:42.706559+00:00",
+      "reinforced_count": 6,
+      "context": "User: can you rember my birthday ? it's 30 april 2001\nAssistant: You're trying to test my memory again! I think we've already established that I can remember your birthday. Let me check... (virtual ca",
+      "source": "assistant",
+      "target": "birthday"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:20:25.679801+00:00",
+      "last_reinforced": "2026-05-25T12:40:06.004312+00:00",
+      "reinforced_count": 2,
+      "context": "User: hi\nAssistant: It seems like we've had this conversation before. I recall that our previous interactions were focused on exploring the concept of adaptive systems and their potential applications",
+      "source": "assistant",
+      "target": "ai"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:36:46.412339+00:00",
+      "last_reinforced": "2026-05-25T12:36:46.412339+00:00",
+      "reinforced_count": 1,
+      "context": "User: I am really excited about building this AI system! It is going to be amazing!\nAssistant: That enthusiasm is infectious! I can tell you're super stoked about your project, and it's great to see t",
+      "source": "assistant",
+      "target": "conversation"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.510351+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.491099+00:00",
+      "reinforced_count": 3,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "ai",
+      "target": "himanshu"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:20:25.680443+00:00",
+      "last_reinforced": "2026-05-25T12:40:06.005437+00:00",
+      "reinforced_count": 2,
+      "context": "User: hi\nAssistant: It seems like we've had this conversation before. I recall that our previous interactions were focused on exploring the concept of adaptive systems and their potential applications",
+      "source": "ai",
+      "target": "robotics"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:21:21.274158+00:00",
+      "last_reinforced": "2026-05-25T12:21:21.274158+00:00",
+      "reinforced_count": 1,
+      "context": "User: If you can read the profile info can't you access the profile name?\nAssistant: I can indeed access the profile information, which includes the username \"Prix\".\n\nWith that knowledge, I should hav",
+      "source": "ai",
+      "target": "prix"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:40:06.006549+00:00",
+      "last_reinforced": "2026-05-25T12:40:06.006549+00:00",
+      "reinforced_count": 1,
+      "context": "User: hi\nAssistant: It seems like we've had this conversation before. I recall that our previous interactions were focused on exploring the concept of adaptive systems and their potential applications",
+      "source": "ai",
+      "target": "adaptive_systems"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.510928+00:00",
+      "last_reinforced": "2026-05-25T11:05:51.510928+00:00",
+      "reinforced_count": 1,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "artificial_intelligence",
+      "target": "ai"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:15:09.251858+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.491949+00:00",
+      "reinforced_count": 2,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "artificial_intelligence",
+      "target": "intelligence"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.511582+00:00",
+      "last_reinforced": "2026-05-25T11:05:51.511582+00:00",
+      "reinforced_count": 1,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "intelligence",
+      "target": "human-level_intelligence"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:15:09.252549+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.492926+00:00",
+      "reinforced_count": 2,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "intelligence",
+      "target": "machine"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.512174+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.493806+00:00",
+      "reinforced_count": 3,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "machine",
+      "target": "computer_system"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T12:15:09.253974+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.494726+00:00",
+      "reinforced_count": 2,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "human-level_intelligence",
+      "target": "ai"
+    },
+    {
+      "relation": "related_to",
+      "weight": 1.0,
+      "created_at": "2026-05-25T11:05:51.512789+00:00",
+      "last_reinforced": "2026-05-25T12:35:50.495826+00:00",
+      "reinforced_count": 3,
+      "context": "User: what is AI\nAssistant: Himanshu! I can tell you're excited to dive into this topic again.\n\nAI stands for Artificial Intelligence. You know how humans have intelligence that allows us to learn, re",
+      "source": "narrow_ai",
+      "target": "weak_ai"
+    }
+  ]
+}

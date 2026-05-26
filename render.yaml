@@ -1,0 +1,18 @@
+# Render.com deployment config
+services:
+  - type: web
+    name: alas
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: OLLAMA_HOST
+        value: http://localhost:11434
+      - key: OLLAMA_MODEL
+        value: llama3.2:3b
+      - key: PORT
+        value: 8000
+    disk:
+      name: alas-data
+      mountPath: /app/backend/data
+      sizeGB: 1
+    healthCheckPath: /api/status

@@ -1,0 +1,32 @@
+# Core
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+pydantic-settings
+
+# LLM
+ollama
+langchain
+langchain-ollama
+langchain-community
+
+# Memory
+chromadb
+sqlalchemy
+aiosqlite
+
+# Voice
+faster-whisper
+edge-tts
+
+# Utilities
+python-multipart
+websockets
+httpx
+numpy
+networkx
+
+# Desktop Integration
+pystray
+Pillow

@@ -1,0 +1,1 @@
+"""ALAS Safety System"""
