@@ -379,6 +379,92 @@ def read_webpage(url: str) -> str:
         return f"Failed to read webpage: {e}"
 
 
+# --- Phase 4 Tool Implementations ---
+
+def execute_run_code(code: str, language: str = "python") -> str:
+    """Execute code in the ALAS sandbox."""
+    from backend.app.sandbox.executor import run_code
+    result = run_code(code=code, language=language)
+    return result.to_str()
+
+
+def execute_git_operation(operation: str, repo_path: str = ".", **kwargs) -> str:
+    """Execute a git operation."""
+    from backend.app.tools.git_agent import git_operation
+    return git_operation(operation=operation, repo_path=repo_path, **kwargs)
+
+
+def execute_research_topic(topic: str, depth: str = "standard") -> str:
+    """Run autonomous research on a topic."""
+    from backend.app.tools.research_agent import research_topic
+    return research_topic(topic=topic, depth=depth)
+
+
+def execute_create_plan(goal: str) -> str:
+    """Create a multi-step execution plan (synchronous wrapper)."""
+    import asyncio
+    from backend.app.planning.planner import generate_plan
+    from backend.app.planning.executor import store_plan
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # We're inside an async context — use a thread
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                plan = pool.submit(
+                    lambda: asyncio.run(generate_plan(goal))
+                ).result(timeout=60)
+        else:
+            plan = asyncio.run(generate_plan(goal))
+
+        store_plan(plan)
+        return plan.summary() + f"\n\n**Plan ID:** `{plan.id}`\nTo execute, tell the user to approve the plan."
+    except Exception as e:
+        return f"Failed to create plan: {e}"
+
+
+def execute_submit_background_task(name: str, task_type: str, params: str = "{}") -> str:
+    """Submit a task to the background queue."""
+    from backend.app.tasks.queue import get_task_queue
+
+    try:
+        parsed_params = json.loads(params) if isinstance(params, str) else params
+    except json.JSONDecodeError:
+        parsed_params = {}
+
+    queue = get_task_queue()
+    task_id = queue.submit(
+        name=name,
+        task_type=task_type,
+        description=f"Background: {name}",
+        params=parsed_params,
+    )
+    return f"✅ Background task submitted!\n**Task ID:** `{task_id}`\n**Name:** {name}\n**Type:** {task_type}\n\nThe task is running in the background. I'll notify you when it completes."
+
+
+# --- Integrations (Phase 4.5) ---
+def execute_analyze_code(file_path: str) -> str:
+    from backend.app.tools.integrations import analyze_code
+    return analyze_code(file_path)
+
+def execute_transcribe_audio(file_path: str) -> str:
+    from backend.app.tools.integrations import transcribe_audio
+    return transcribe_audio(file_path)
+
+def execute_cloud_sync(action: str, target: str) -> str:
+    from backend.app.tools.integrations import cloud_sync
+    return cloud_sync(action, target)
+
+def execute_track_time(task_name: str, duration_minutes: int) -> str:
+    from backend.app.tools.integrations import track_time
+    return track_time(task_name, duration_minutes)
+
+def execute_visualize_data(dataset_info: str) -> str:
+    from backend.app.tools.integrations import visualize_data
+    return visualize_data(dataset_info)
+
+
 # --- Tool Registry Mapping ---
 # Maps the tool name (from LLM) to the actual Python function
 TOOL_FUNCTIONS: Dict[str, Callable] = {
@@ -395,7 +481,19 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "read_webpage": read_webpage,
     "set_reminder": execute_reminder,
     "add_skill": execute_add_skill,
-    "search_skills": execute_search_skills
+    "search_skills": execute_search_skills,
+    # Phase 4 — Agentic Autonomy
+    "run_code": execute_run_code,
+    "git_operation": execute_git_operation,
+    "research_topic": execute_research_topic,
+    "create_plan": execute_create_plan,
+    "submit_background_task": execute_submit_background_task,
+    # Phase 4.5 — Integrations
+    "analyze_code": execute_analyze_code,
+    "transcribe_audio": execute_transcribe_audio,
+    "cloud_sync": execute_cloud_sync,
+    "track_time": execute_track_time,
+    "visualize_data": execute_visualize_data,
 }
 
 # --- Ollama Tool Schemas ---
@@ -656,6 +754,225 @@ AVAILABLE_TOOLS = [
                     }
                 },
                 "required": ["query"]
+            }
+        }
+    },
+    # --- Phase 4 — Agentic Autonomy Tools ---
+    {
+        "type": "function",
+        "function": {
+            "name": "run_code",
+            "description": "Execute Python or Bash code safely in an isolated sandbox with resource limits (30s timeout, 256MB memory). Use this to run code snippets, test solutions, do calculations, or process data. Returns stdout, stderr, and execution time.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The source code to execute."
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Programming language: 'python' or 'bash'. Defaults to 'python'."
+                    }
+                },
+                "required": ["code"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_operation",
+            "description": "Perform git operations on a repository. Supports: status, diff, log, branch (list/create/switch), commit (with auto-generated messages), and stash (push/pop/list). Use this when the user asks about git, version control, or code changes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "description": "The git operation: 'status', 'diff', 'log', 'branch', 'commit', or 'stash'."
+                    },
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the git repository. Defaults to current directory."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Commit message (for 'commit' operation). Auto-generated if not provided."
+                    },
+                    "branch_name": {
+                        "type": "string",
+                        "description": "Branch name (for 'branch' operation with create/switch action)."
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "Sub-action for branch ('list'/'create'/'switch') or stash ('push'/'pop'/'list')."
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of commits to show (for 'log' operation, default 10)."
+                    },
+                    "staged": {
+                        "type": "boolean",
+                        "description": "Show staged diff instead of unstaged (for 'diff' operation)."
+                    }
+                },
+                "required": ["operation"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "research_topic",
+            "description": "Conduct thorough autonomous research on any topic. Searches the web, reads multiple articles, synthesizes a structured report, and saves it as a markdown file. Use this when the user asks you to research, investigate, or write a report on a topic.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "The topic or question to research."
+                    },
+                    "depth": {
+                        "type": "string",
+                        "description": "Research depth: 'quick' (3 sources), 'standard' (5 sources), or 'deep' (8 sources). Default: 'standard'."
+                    }
+                },
+                "required": ["topic"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_plan",
+            "description": "Create a structured multi-step execution plan for a complex goal. Decomposes the goal into concrete, sequential steps with specific tools and rollback commands. Use this when the user asks you to do something that requires multiple steps (e.g., 'set up a project', 'organize my files', 'deploy my app').",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "description": "The goal to plan for, in natural language."
+                    }
+                },
+                "required": ["goal"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "submit_background_task",
+            "description": "Submit a long-running task to the background queue. The task runs asynchronously and you will be notified when it completes. Use this for tasks that take more than a few seconds (e.g., deep research, large file processing, code analysis). Supported task types: 'research' (params: topic, depth), 'code_exec' (params: code, language).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "A human-readable name for the task."
+                    },
+                    "task_type": {
+                        "type": "string",
+                        "description": "Type of task: 'research' or 'code_exec'."
+                    },
+                    "params": {
+                        "type": "string",
+                        "description": "JSON string of parameters for the task. For research: {\"topic\": \"...\", \"depth\": \"standard\"}. For code_exec: {\"code\": \"...\", \"language\": \"python\"}."
+                    }
+                },
+                "required": ["name", "task_type"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_code",
+            "description": "Analyze a local code file (DeepCode integration). Reads the file and prepares it for LLM review to find bugs, security issues, or suggest improvements.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to the code file."
+                    }
+                },
+                "required": ["file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "transcribe_audio",
+            "description": "Transcribe an audio file to text (Otter.ai integration via Whisper).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to the audio file."
+                    }
+                },
+                "required": ["file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "cloud_sync",
+            "description": "Sync files with cloud storage (Google Drive, Dropbox, OneDrive). Use to upload files or list cloud storage contents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "description": "'upload' or 'list'."
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "The local file/folder path to upload (only needed if action is 'upload')."
+                    }
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "track_time",
+            "description": "Track time spent on tasks (Tricount/Time integration).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_name": {
+                        "type": "string",
+                        "description": "Name of the task."
+                    },
+                    "duration_minutes": {
+                        "type": "integer",
+                        "description": "Duration to log in minutes."
+                    }
+                },
+                "required": ["task_name", "duration_minutes"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "visualize_data",
+            "description": "Initialize a data visualization engine for a dataset (Tableau/Power BI integration). Instructs the LLM on how to generate the corresponding code.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dataset_info": {
+                        "type": "string",
+                        "description": "Description or path to the dataset you want to visualize."
+                    }
+                },
+                "required": ["dataset_info"]
             }
         }
     }

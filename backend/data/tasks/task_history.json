@@ -1,0 +1,16 @@
+{
+  "task_46283489ab": {
+    "id": "task_46283489ab",
+    "name": "Test Code Run",
+    "description": "Test sandbox via queue",
+    "task_type": "code_exec",
+    "status": "completed",
+    "progress": 1.0,
+    "progress_message": "Complete",
+    "result": "\u2705 Success (python, 13ms, exit code 0)\n\n--- Output ---\nALAS Phase 4 sandbox works!\n",
+    "error": null,
+    "created_at": "2026-05-27T17:02:40.886800",
+    "started_at": "2026-05-27T17:02:40.887419",
+    "completed_at": "2026-05-27T17:02:40.902454"
+  }
+}

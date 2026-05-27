@@ -1,0 +1,32 @@
+{
+  "rec_e010cf39": {
+    "id": "rec_e010cf39",
+    "type": "recurring",
+    "name": "Disk Space Monitor",
+    "callback": "sysmon_disk",
+    "interval_minutes": 720,
+    "cron": null,
+    "created": "2026-05-27T17:02:08.353602",
+    "status": "active"
+  },
+  "rec_84926f3c": {
+    "id": "rec_84926f3c",
+    "type": "recurring",
+    "name": "RAM Usage Monitor",
+    "callback": "sysmon_ram",
+    "interval_minutes": 60,
+    "cron": null,
+    "created": "2026-05-27T17:02:08.353876",
+    "status": "active"
+  },
+  "rec_9dc4814d": {
+    "id": "rec_9dc4814d",
+    "type": "recurring",
+    "name": "Test Reminder",
+    "callback": "user_schedule_test_reminder",
+    "interval_minutes": 60,
+    "cron": null,
+    "created": "2026-05-27T17:02:43.898197",
+    "status": "cancelled"
+  }
+}

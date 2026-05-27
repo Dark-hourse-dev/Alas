@@ -1,0 +1,49 @@
+{
+  "name": "alas-desktop",
+  "productName": "ALAS",
+  "version": "0.5.0",
+  "description": "Adaptive Living AI System — Cross-platform desktop companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "package": "electron-builder --dir",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:all": "electron-builder --linux --win --mac"
+  },
+  "build": {
+    "appId": "com.alas.desktop",
+    "productName": "ALAS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "src/assets",
+      "category": "Utility"
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "src/assets/icon.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "src/assets/icon.png",
+      "category": "public.app-category.productivity"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

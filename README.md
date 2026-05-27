@@ -2,8 +2,8 @@
 
 > A persistent digital lifeform that learns, adapts, and evolves through continuous experience.
 
-[![Phase](https://img.shields.io/badge/Phase-3%20Adaptive%20Learning-blueviolet)]()
-[![Version](https://img.shields.io/badge/Version-0.3.0-cyan)]()
+[![Phase](https://img.shields.io/badge/Phase-4%20Agentic%20Autonomy-blueviolet)]()
+[![Version](https://img.shields.io/badge/Version-0.5.0-cyan)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
 
 ---
@@ -33,6 +33,15 @@
 - 🔌 **LoRA Adapters** — Dynamic adapter registry (coding, creative, finance)
 - 📱 **PWA Support** — Installable as native app on any device
 - 🐳 **Docker Deployment** — One-command cloud deployment
+
+### Agentic Autonomy (Phase 4) ✅
+- 🐍 **Code Sandbox** — Execute Python/Bash safely with memory and time limits
+- 🔀 **Git Agent** — Full repository management (commit, branch, status, stash)
+- 🔬 **Research Agent** — Autonomous web search, reading, and report synthesis
+- 🗺️ **Task Planner** — Multi-step LLM plan generation with rollback capabilities
+- 📋 **Background Queue** — Async task execution with progress tracking
+- 📅 **Scheduled Jobs** — Cron and interval-based recurring automations
+- 💻 **Desktop App** — Cross-platform Electron app with bio-inspired UI and context isolation
 
 ---
 
@@ -82,6 +91,17 @@ ngrok http 8000
 # Open the URL on your phone → "Add to Home Screen" → ALAS is an app!
 ```
 
+### Desktop App (Linux/Mac/Win)
+```bash
+# 1. Start the ALAS backend
+./start_alas.sh
+
+# 2. To build standalone executables
+cd desktop
+npm run dist:all
+# Outputs AppImage, DMG, and EXE to desktop/dist/
+```
+
 See [DEPLOYMENT.md](DEPLOYMENT.md) for cloud deployment options (Railway, Render, VPS).
 
 ---
@@ -100,6 +120,11 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for cloud deployment options (Railway, Render
 ┌──────────────────▼─────────────────────────────────────┐
 │  FastAPI Backend                                       │
 │  ├── LLM Engine (Ollama + ReAct tools + streaming)     │
+│  ├── Agentic Autonomy (Phase 4)                        │
+│  │   ├── Code Sandbox (subprocess isolation)           │
+│  │   ├── Task Planner & Executor                       │
+│  │   ├── Background Task Queue                         │
+│  │   └── Specialized Agents (Git, Research)            │
 │  ├── Memory                                            │
 │  │   ├── L1 Episodic  (ChromaDB vector store)          │
 │  │   ├── L2 Semantic  (NetworkX knowledge graph)       │
@@ -146,6 +171,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for cloud deployment options (Railway, Render
 | GET | `/api/learning/adapters` | List LoRA adapters |
 | POST | `/api/voice/synthesize` | Text-to-speech |
 | POST | `/api/voice/transcribe` | Speech-to-text |
+| POST | `/api/tasks/submit` | Submit background task |
+| GET | `/api/tasks/queue` | List background tasks |
+| GET | `/api/tasks/plans` | List execution plans |
+| GET | `/api/schedules` | List scheduled jobs |
 | GET | `/api/status` | System health check |
 
 ---
@@ -167,13 +196,17 @@ adaptive-living-ai/
 │   │   └── voice/               # STT + TTS
 │   ├── data/                    # Persistent data (ChromaDB, SQLite, KG)
 │   └── requirements.txt
-├── frontend/
+├── frontend/                    # Web Client (PWA)
 │   ├── index.html               # Main UI
 │   ├── manifest.json            # PWA manifest
 │   ├── sw.js                    # Service worker
 │   ├── css/styles.css           # Premium dark theme
-│   ├── js/                      # Chat, voice, memory, modes, KG, evolution
-│   └── assets/                  # App icon
+│   └── js/                      # Chat, voice, memory, modes, KG, evolution
+├── desktop/                     # Electron Desktop App (NEW)
+│   ├── package.json             # Build config for Linux/Mac/Win
+│   ├── main.js                  # Main process & tray integration
+│   ├── preload.js               # Context isolation security bridge
+│   └── src/                     # App UI, modules, and bio-inspired styles
 ├── Dockerfile                   # Container image
 ├── docker-compose.yml           # Full stack (ALAS + Ollama)
 ├── railway.toml                 # Railway deployment config
@@ -188,11 +221,9 @@ adaptive-living-ai/
 ## 🗺️ Roadmap
 
 See [FUTURE_FEATURES.md](FUTURE_FEATURES.md) for the full 155-feature roadmap including:
-- 🔥 **Phase 3.5** — Always-On System Integration (wake word, auto-start, OS integration)
-- **Phase 4** — Agentic Autonomy (web browsing, code sandbox, email/calendar)
 - **Phase 5** — Cognitive Superpowers (causal reasoning, knowledge mastery)
 - **Phase 6–10** — Sensory mastery, robotics, swarm intelligence, meta-learning
 
 ---
 
-*ALAS v0.3.0 — Phase 3: Adaptive Learning | May 2026*
+*ALAS v0.5.0 — Phase 4: Agentic Autonomy | May 2026*

@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from backend.app.config import get_settings, ensure_data_dirs
-from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks
+from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks, schedules
 from backend.app.proactive.scheduler import get_scheduler
 from backend.app.proactive.monitors import register_monitors
 
@@ -43,7 +43,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Emotion Detection: Active")
     logger.info(f"   Permission Tiers: 🟢 AUTO / 🟡 NOTIFY / 🔴 ASK")
     logger.info(f"   System Tools: shell, sysinfo, file manager")
-    logger.info("🧬 ALAS Phase 3.5 — Always-On System Integration ready.")
+    logger.info(f"   Phase 4 Tools: sandbox, git, research, planner, task queue")
+    logger.info("🧬 ALAS Phase 4 — Agentic Autonomy ready.")
     
     # Start Scheduler
     scheduler = get_scheduler()
@@ -54,9 +55,15 @@ async def lifespan(app: FastAPI):
     from backend.app.plugins.defaults import register_default_plugins
     register_default_plugins()
     
+    # Start Background Task Queue Worker
+    from backend.app.tasks.queue import get_task_queue
+    task_queue = get_task_queue()
+    await task_queue.start_worker()
+    
     yield
     
     # Shutdown
+    await task_queue.stop_worker()
     scheduler.shutdown()
     logger.info("🧬 ALAS shutting down.")
 
@@ -65,7 +72,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ALAS — Adaptive Living AI System",
     description="A persistent digital lifeform that learns, adapts, and evolves.",
-    version="0.1.0",
+    version="0.5.0",
     lifespan=lifespan,
 )
 
@@ -89,6 +96,7 @@ app.include_router(sync.router)
 app.include_router(learning.router)
 app.include_router(permissions.router)
 app.include_router(tasks.router)
+app.include_router(schedules.router)
 
 
 # --- Static Files (Frontend) ---
@@ -131,18 +139,28 @@ async def serve_frontend():
 async def system_status():
     """System-wide health and status check."""
     from backend.app.safety.permissions import get_permission_manager
+    from backend.app.tasks.queue import get_task_queue
     pm = get_permission_manager()
     actions = pm.get_recent_actions(100)
+    tq = get_task_queue()
+    active_tasks = tq.get_active_tasks()
     return {
         "system": "ALAS — Adaptive Living AI System",
-        "version": "0.4.0",
-        "phase": "Phase 3.5 — Always-On System Integration",
+        "version": "0.5.0",
+        "phase": "Phase 4 — Agentic Autonomy",
         "status": "online",
         "features": {
             "permission_tiers": True,
             "shell_executor": True,
             "system_monitor": True,
             "file_manager": True,
+            "code_sandbox": True,
+            "git_agent": True,
+            "research_agent": True,
+            "task_planner": True,
+            "background_tasks": True,
+            "scheduled_jobs": True,
         },
         "actions_logged": len(actions),
+        "active_background_tasks": len(active_tasks),
     }

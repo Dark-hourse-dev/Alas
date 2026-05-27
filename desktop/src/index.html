@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src *; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
+  <title>ALAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ═══ Custom Titlebar ═══ -->
+  <header id="titlebar">
+    <div class="titlebar-drag">
+      <div class="titlebar-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="url(#grad1)" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="3" fill="url(#grad1)"/>
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#64dcff"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="titlebar-title">ALAS</span>
+      <div id="connection-dot" class="dot offline" title="Disconnected"></div>
+    </div>
+    <div class="titlebar-controls">
+      <button id="btn-minimize" class="titlebar-btn" title="Minimize">
+        <svg width="10" height="1"><rect width="10" height="1" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-maximize" class="titlebar-btn" title="Maximize">
+        <svg width="10" height="10"><rect width="10" height="10" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <button id="btn-close" class="titlebar-btn close" title="Close">
+        <svg width="10" height="10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ Neural Background Canvas ═══ -->
+  <canvas id="neural-bg"></canvas>
+
+  <!-- ═══ Main Container ═══ -->
+  <main id="app">
+
+    <!-- ═══ Connection Screen ═══ -->
+    <section id="screen-connect" class="screen active">
+      <div class="connect-card">
+        <div class="organism">
+          <div class="nucleus"></div>
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+        </div>
+        <h1 class="connect-title">ALAS</h1>
+        <p class="connect-subtitle">Adaptive Living AI System</p>
+        <div class="connect-form">
+          <label for="server-url">Backend URL</label>
+          <div class="input-row">
+            <input type="text" id="server-url" value="http://localhost:8000" spellcheck="false" autocomplete="off">
+            <button id="btn-connect" class="btn-primary">Connect</button>
+          </div>
+          <p id="connect-status" class="status-text"></p>
+        </div>
+        <div class="connect-info">
+          <span class="badge">v0.5.0</span>
+          <span class="badge">Phase 4</span>
+          <span class="badge" id="platform-badge"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Chat Screen ═══ -->
+    <section id="screen-chat" class="screen">
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <div class="sidebar-header">
+          <div class="avatar">
+            <div class="avatar-glow"></div>
+            <span>🧬</span>
+          </div>
+          <div class="sidebar-info">
+            <h3 id="sidebar-name">ALAS</h3>
+            <p id="sidebar-status">Phase 4 — Agentic Autonomy</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-btn active" data-panel="chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Chat
+          </button>
+          <button class="nav-btn" data-panel="tasks">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+            Tasks
+          </button>
+          <button class="nav-btn" data-panel="tools">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            Tools
+          </button>
+          <button class="nav-btn" data-panel="settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Settings
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="casual" title="Casual">💬</button>
+            <button class="mode-btn" data-mode="work" title="Work">💼</button>
+            <button class="mode-btn" data-mode="creative" title="Creative">🎨</button>
+            <button class="mode-btn" data-mode="learning" title="Learning">📚</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ═══ Panel: Chat ═══ -->
+      <div id="panel-chat" class="panel active">
+        <div id="messages" class="messages-container">
+          <div id="welcome-msg" class="welcome">
+            <div class="welcome-organism">
+              <div class="nucleus"></div>
+              <div class="ring ring-1"></div>
+              <div class="ring ring-2"></div>
+            </div>
+            <h2>Hello, I'm ALAS</h2>
+            <p>Your adaptive AI companion. Ask me anything, run code, research topics, or manage your system.</p>
+            <div class="quick-actions">
+              <button class="quick-btn" data-msg="What can you do?">✨ Capabilities</button>
+              <button class="quick-btn" data-msg="Check the git status of the ALAS project">🔀 Git Status</button>
+              <button class="quick-btn" data-msg="Run this Python code: print('Hello from ALAS!')">🐍 Run Code</button>
+              <button class="quick-btn" data-msg="What's the system status?">📊 System Info</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div id="typing-indicator" class="typing-indicator hidden">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <span>ALAS is thinking...</span>
+          </div>
+          <div class="input-row">
+            <textarea id="msg-input" placeholder="Message ALAS..." rows="1" autofocus></textarea>
+            <button id="btn-send" class="btn-send" disabled title="Send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Panel: Tasks ═══ -->
+      <div id="panel-tasks" class="panel">
+        <div class="panel-header">
+          <h2>Background Tasks</h2>
+          <button id="btn-refresh-tasks" class="btn-icon" title="Refresh">🔄</button>
+        </div>
+        <div id="tasks-list" class="tasks-list">
+          <p class="empty-state">No background tasks yet. Ask ALAS to research a topic or run code.</p>
+        </div>
+      </div>
+
+      <!-- ═══ Panel: Tools ═══ -->
+      <div id="panel-tools" class="panel">
+        <div class="panel-header">
+          <h2>Tool Arsenal</h2>
+        </div>
+        <div class="tools-grid">
+          <div class="tool-card">
+            <span class="tool-icon">🐍</span>
+            <h4>Code Sandbox</h4>
+            <p>Run Python & Bash safely</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🔀</span>
+            <h4>Git Agent</h4>
+            <p>Status, diff, commit, branch</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🔬</span>
+            <h4>Research</h4>
+            <p>Autonomous web research</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🗺️</span>
+            <h4>Task Planner</h4>
+            <p>Multi-step plan generation</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🌐</span>
+            <h4>Web Search</h4>
+            <p>Search & read web pages</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">📁</span>
+            <h4>File Manager</h4>
+            <p>Read, write, organize files</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🖥️</span>
+            <h4>Shell Exec</h4>
+            <p>Run system commands</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">📅</span>
+            <h4>Scheduler</h4>
+            <p>Reminders & cron jobs</p>
+          </div>
+          <div class="tool-card">
+            <span class="tool-icon">🧠</span>
+            <h4>Memory</h4>
+            <p>Persistent skill & episodic</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Panel: Settings ═══ -->
+      <div id="panel-settings" class="panel">
+        <div class="panel-header">
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-content">
+          <div class="setting-group">
+            <h3>Connection</h3>
+            <label>Backend URL</label>
+            <input type="text" id="settings-server-url" class="settings-input">
+            <button id="btn-save-url" class="btn-secondary">Save & Reconnect</button>
+          </div>
+          <div class="setting-group">
+            <h3>Security</h3>
+            <label>API Token</label>
+            <div class="token-display">
+              <code id="api-token-display">••••••••••••••••</code>
+              <button id="btn-copy-token" class="btn-icon" title="Copy">📋</button>
+              <button id="btn-regen-token" class="btn-icon" title="Regenerate">🔄</button>
+            </div>
+          </div>
+          <div class="setting-group">
+            <h3>Appearance</h3>
+            <label>
+              <input type="checkbox" id="setting-always-top"> Always on top
+            </label>
+          </div>
+          <div class="setting-group">
+            <h3>Shortcut</h3>
+            <p class="shortcut-display">Toggle: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd></p>
+          </div>
+          <div class="setting-group">
+            <h3>About</h3>
+            <p>ALAS Desktop v0.5.0 — Phase 4: Agentic Autonomy</p>
+            <p class="muted">Adaptive Living AI System</p>
+            <p class="muted" id="platform-info"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="modules/connection.js"></script>
+  <script src="modules/chat.js"></script>
+  <script src="modules/security.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
