@@ -102,7 +102,7 @@ npm run dist:all
 # Outputs AppImage, DMG, and EXE to desktop/dist/
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for cloud deployment options (Railway, Render, VPS).
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for cloud deployment options (Railway, Render, VPS).
 
 ---
 
@@ -207,12 +207,19 @@ adaptive-living-ai/
 │   ├── main.js                  # Main process & tray integration
 │   ├── preload.js               # Context isolation security bridge
 │   └── src/                     # App UI, modules, and bio-inspired styles
+├── docs/                        # Project documentation
+│   ├── ALAS_Project_Documentation.md
+│   ├── DEPLOYMENT.md
+│   └── FUTURE_FEATURES.md
+├── deploy/                      # Cloud deployment configurations
+│   ├── railway.toml
+│   └── render.yaml
+├── scripts/                     # Utility and daemon scripts
+│   ├── install_daemon.sh
+│   ├── wake_daemon.py
+│   └── train_evolution.py
 ├── Dockerfile                   # Container image
 ├── docker-compose.yml           # Full stack (ALAS + Ollama)
-├── railway.toml                 # Railway deployment config
-├── render.yaml                  # Render deployment config
-├── DEPLOYMENT.md                # Cloud deployment guide
-├── FUTURE_FEATURES.md           # 155-feature roadmap
 └── .env.example                 # Environment template
 ```
 
@@ -220,7 +227,7 @@ adaptive-living-ai/
 
 ## 🗺️ Roadmap
 
-See [FUTURE_FEATURES.md](FUTURE_FEATURES.md) for the full 155-feature roadmap including:
+See [FUTURE_FEATURES.md](docs/FUTURE_FEATURES.md) for the full 155-feature roadmap including:
 - **Phase 5** — Cognitive Superpowers (causal reasoning, knowledge mastery)
 - **Phase 6–10** — Sensory mastery, robotics, swarm intelligence, meta-learning
 
