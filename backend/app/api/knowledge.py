@@ -130,6 +130,14 @@ async def generate_reflection(session_id: Optional[str] = None):
     return {"reflection": reflection}
 
 
+@router.post("/synthesize")
+async def trigger_synthesis():
+    """Trigger Deep Knowledge Synthesis to discover non-obvious connections."""
+    from backend.app.memory.synthesis import run_synthesis_task
+    result = await run_synthesis_task()
+    return result
+
+
 @router.delete("/")
 async def clear_graph():
     """Clear the entire knowledge graph. Irreversible."""

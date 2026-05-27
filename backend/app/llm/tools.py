@@ -465,6 +465,50 @@ def execute_visualize_data(dataset_info: str) -> str:
     return visualize_data(dataset_info)
 
 
+# --- Phase 5 (Cognitive Superpowers) ---
+def execute_deep_think(problem: str) -> str:
+    import asyncio
+    from backend.app.cognition.tot_reasoner import ToTReasoner
+    
+    try:
+        reasoner = ToTReasoner(max_depth=3, max_branches=3)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                result = pool.submit(
+                    lambda: asyncio.run(reasoner.reason(problem))
+                ).result(timeout=120)
+        else:
+            result = asyncio.run(reasoner.reason(problem))
+            
+        output = f"🧠 **Deep Thought Process for:** {problem}\n\n"
+        for i, node in enumerate(result['best_path']):
+            output += f"**Step {i+1}** (Score: {node['score']}/10): {node['thought']}\n"
+        output += f"\n**Conclusion:** {result['final_conclusion']}"
+        return output
+    except Exception as e:
+        return f"Deep thought failed: {e}"
+
+def execute_simulate_outcome(scenario: str, context: str = "") -> str:
+    import asyncio
+    from backend.app.cognition.simulator import simulate_outcome
+    
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                result = pool.submit(
+                    lambda: asyncio.run(simulate_outcome(scenario, context))
+                ).result(timeout=60)
+        else:
+            result = asyncio.run(simulate_outcome(scenario, context))
+        return result
+    except Exception as e:
+        return f"Simulation failed: {e}"
+
+
 # --- Tool Registry Mapping ---
 # Maps the tool name (from LLM) to the actual Python function
 TOOL_FUNCTIONS: Dict[str, Callable] = {
@@ -494,6 +538,9 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "cloud_sync": execute_cloud_sync,
     "track_time": execute_track_time,
     "visualize_data": execute_visualize_data,
+    # Phase 5 — Cognitive Superpowers
+    "deep_think": execute_deep_think,
+    "simulate_outcome": execute_simulate_outcome,
 }
 
 # --- Ollama Tool Schemas ---
@@ -973,6 +1020,44 @@ AVAILABLE_TOOLS = [
                     }
                 },
                 "required": ["dataset_info"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "deep_think",
+            "description": "Trigger a Tree-of-Thoughts (ToT) reasoning process for complex logic, math, or abstract problems. It will internally generate multiple logical paths, score them, and return the best step-by-step conclusion.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "problem": {
+                        "type": "string",
+                        "description": "The complex problem or question to reason about."
+                    }
+                },
+                "required": ["problem"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "simulate_outcome",
+            "description": "Run an objective causal simulation sandbox to predict 'what if' scenarios based on logical, physical, and historical rules. Returns initial state, primary effect, cascading effects, and final outcome.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario": {
+                        "type": "string",
+                        "description": "The hypothetical scenario or action to simulate."
+                    },
+                    "context": {
+                        "type": "string",
+                        "description": "Any necessary background context or rules."
+                    }
+                },
+                "required": ["scenario"]
             }
         }
     }

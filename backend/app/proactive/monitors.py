@@ -69,6 +69,26 @@ class SystemMonitor:
         except Exception as e:
             logger.error(f"Failed to check memory: {e}")
 
+    def trigger_knowledge_synthesis(self):
+        """Periodically trigger Deep Knowledge Synthesis."""
+        import asyncio
+        from backend.app.memory.synthesis import run_synthesis_task
+        
+        # Only run if highly proactive
+        genome = self.evolution.current_genome
+        if genome.get("proactivity_threshold", 0.5) < 0.6:
+            return
+            
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We can't await in a sync method, so we create a task
+                loop.create_task(run_synthesis_task())
+            else:
+                asyncio.run(run_synthesis_task())
+        except Exception as e:
+            logger.error(f"Failed to trigger knowledge synthesis: {e}")
+
 # Singleton
 _monitor = None
 
@@ -96,5 +116,10 @@ def register_monitors(scheduler):
     if "sysmon_ram" not in existing_callbacks:
         # Check every hour
         scheduler.add_recurring("RAM Usage Monitor", "sysmon_ram", interval_minutes=60)
+        
+    scheduler.register_callback("sysmon_synthesis", monitor.trigger_knowledge_synthesis)
+    if "sysmon_synthesis" not in existing_callbacks:
+        # Check every 24 hours (1440 minutes)
+        scheduler.add_recurring("Knowledge Synthesis", "sysmon_synthesis", interval_minutes=1440)
         
     logger.info("System monitors registered.")
