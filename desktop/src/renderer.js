@@ -27,6 +27,15 @@
   const sendBtn = $('#btn-send');
   const typingIndicator = $('#typing-indicator');
 
+  // File Upload state
+  let selectedFile = null;
+  const fileUpload = $('#file-upload');
+  const btnUpload = $('#btn-upload');
+  const previewContainer = $('#file-preview-container');
+  const previewImg = $('#file-preview-img');
+  const previewName = $('#file-preview-name');
+  const btnRemoveFile = $('#btn-remove-file');
+
   // ─── Init ───────────────────────────
   async function init() {
     await security.init();
@@ -99,7 +108,48 @@
   // ─── Send Message ───────────────────
   function sendMessage() {
     const msg = msgInput.value.trim();
-    if (!msg || isStreaming) return;
+    if ((!msg && !selectedFile) || isStreaming) return;
+
+    if (selectedFile) {
+      // Send image to vision endpoint
+      const displayMsg = msg ? `[Image Uploaded] ${msg}` : `[Image Uploaded]`;
+      chat.addMessage('user', displayMsg);
+      isStreaming = true;
+      streamEl = null;
+      sendBtn.disabled = true;
+      typingIndicator.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      if (msg) formData.append('prompt', msg);
+      formData.append('task', 'analyze');
+
+      fetch(`${serverUrl}/api/chat/vision`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        typingIndicator.classList.add('hidden');
+        chat.addMessage('assistant', data.response || data.result || "Image analyzed.");
+        isStreaming = false;
+        sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
+      })
+      .catch(err => {
+        typingIndicator.classList.add('hidden');
+        chat.addMessage('assistant', `❌ Vision Analysis Failed: ${err.message}`);
+        isStreaming = false;
+        sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
+      });
+
+      // clear
+      btnRemoveFile.click();
+      msgInput.value = '';
+      msgInput.style.height = 'auto';
+      return;
+    }
+
+    // Normal websocket message
     chat.addMessage('user', msg);
     isStreaming = true;
     streamEl = null;
@@ -153,12 +203,35 @@
     msgInput.addEventListener('input', () => {
       msgInput.style.height = 'auto';
       msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
-      sendBtn.disabled = !msgInput.value.trim() || isStreaming;
+      sendBtn.disabled = (!msgInput.value.trim() && !selectedFile) || isStreaming;
     });
     msgInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
     sendBtn.onclick = sendMessage;
+
+    // File Upload
+    btnUpload.onclick = () => fileUpload.click();
+    fileUpload.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      selectedFile = file;
+      previewName.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        previewContainer.style.display = 'flex';
+        sendBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    };
+    btnRemoveFile.onclick = () => {
+      selectedFile = null;
+      fileUpload.value = '';
+      previewContainer.style.display = 'none';
+      previewImg.src = '';
+      sendBtn.disabled = !msgInput.value.trim();
+    };
 
     // Quick actions
     $$('.quick-btn').forEach(btn => {

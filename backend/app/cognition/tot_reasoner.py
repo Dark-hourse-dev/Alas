@@ -52,9 +52,9 @@ class ToTReasoner:
             # Try to parse the JSON array from the response
             # (In production, use structured output if supported)
             start_idx = response.find('[')
-            end_idx = response.rfind(']') + 1
-            if start_idx != -1 and end_idx != -1:
-                json_str = response[start_idx:end_idx]
+            end_idx = response.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = response[start_idx:end_idx+1]
                 thoughts = json.loads(json_str)
                 if isinstance(thoughts, list) and len(thoughts) > 0:
                     return thoughts[:self.max_branches]
@@ -90,10 +90,13 @@ class ToTReasoner:
             
             # Extract number from response
             import re
+            # Extract numbers and filter for valid scores (1-10)
             numbers = re.findall(r'\d+', response)
-            if numbers:
-                score = int(numbers[0])
-                return max(1, min(10, score))
+            valid_scores = [int(n) for n in numbers if 1 <= int(n) <= 10]
+            if valid_scores:
+                # If multiple numbers found, the score is often the last one (e.g. "Step 1: 8")
+                score = valid_scores[-1]
+                return score
         except Exception as e:
             logger.error(f"Failed to evaluate thought: {e}")
             
@@ -109,19 +112,19 @@ class ToTReasoner:
         best_path = []
         
         # Simple BFS expansion for prototyping
-        queue = [(root, 0, [])]
+        queue = [(root, 0, [])] # path_history stores list of dicts
         
         while queue:
             current_node, depth, path_history = queue.pop(0)
-            current_path = path_history + [current_node.content]
+            current_path = path_history + [{'thought': current_node.content, 'score': current_node.score}]
             
             if depth >= self.max_depth:
                 if not best_path or current_node.score > best_path[-1]['score']:
-                    best_path = [{'thought': t, 'score': current_node.score} for t in current_path]
+                    best_path = current_path
                 continue
                 
             # Generate branches
-            context = "\n".join(current_path)
+            context = "\n".join([step['thought'] for step in current_path])
             new_thoughts = await self._generate_thoughts(problem, context)
             
             for i, thought in enumerate(new_thoughts):
