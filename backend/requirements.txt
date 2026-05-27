@@ -26,6 +26,9 @@ websockets
 httpx
 numpy
 networkx
+beautifulsoup4
+duckduckgo-search
+requests
 
 # Desktop Integration
 pystray

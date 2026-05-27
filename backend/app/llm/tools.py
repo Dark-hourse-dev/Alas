@@ -112,30 +112,234 @@ def list_directory(directory_path: str) -> str:
         return f"Error listing directory: {e}"
 
 
-def execute_shell(command: str) -> str:
-    """Execute a shell command and return its output."""
+def execute_reminder(message: str, minutes_from_now: int) -> str:
+    """Schedule a reminder via the ALAS Scheduler."""
     try:
-        logger.warning(f"Executing shell command: {command}")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+        from datetime import datetime, timedelta
+        from backend.app.proactive.scheduler import get_scheduler
         
+        run_at = datetime.now() + timedelta(minutes=minutes_from_now)
+        task_id = get_scheduler().add_reminder(message, run_at)
+        
+        return f"Reminder set successfully! It will trigger at {run_at.strftime('%I:%M %p')}. Task ID: {task_id}"
+    except Exception as e:
+        logger.error(f"Failed to set reminder: {e}")
+        return f"Error setting reminder: {e}"
+
+def execute_add_skill(skill_name: str, description: str, steps: list) -> str:
+    """Save a new procedural skill to ALAS Skill Memory."""
+    from backend.app.memory.skills import get_skill_memory
+    try:
+        get_skill_memory().add_skill(skill_name, steps, description)
+        return f"Successfully learned and saved skill: {skill_name}"
+    except Exception as e:
+        import logging
+        logging.getLogger("alas.tools").error(f"Failed to save skill: {e}")
+        return f"Failed to save skill: {e}"
+
+def execute_search_skills(query: str) -> str:
+    """Search ALAS Skill Memory for previously learned skills."""
+    from backend.app.memory.skills import get_skill_memory
+    try:
+        results = get_skill_memory().search_skills(query)
+        if not results:
+            return "No matching skills found in memory."
+        
+        output = []
+        for r in results:
+            output.append(f"Skill: {r['name']}\nDescription: {r['description']}\nSteps:\n" + "\n".join(f"- {s}" for s in r['steps']))
+        return "\n\n".join(output)
+    except Exception as e:
+        return f"Failed to search skills: {e}"
+
+def execute_shell(command: str) -> str:
+    """
+    Execute a shell command with Permission Tier safety checks.
+    
+    🟢 AUTO   — Executes silently (ls, cat, git status, etc.)
+    🟡 NOTIFY — Executes and logs a notification (pip install, git push, etc.)
+    🔴 ASK    — BLOCKED until user explicitly approves (rm, sudo, etc.)
+    """
+    from backend.app.safety.permissions import get_permission_manager, PermissionTier
+
+    pm = get_permission_manager()
+    allowed, tier, reason = pm.is_allowed(command)
+
+    if not allowed:
+        # 🔴 ASK tier — block execution
+        logger.warning(f"🔴 BLOCKED shell command (tier={tier.value}): {command} — {reason}")
+        pm.log_action(command, tier.value, "BLOCKED", approved_by="system")
+        return (
+            f"⛔ PERMISSION DENIED — This command requires explicit user approval.\n"
+            f"Command: {command}\n"
+            f"Tier: 🔴 ASK\n"
+            f"Reason: {reason}\n\n"
+            f"Tell the user what you want to do and ask them to approve it via the "
+            f"ALAS permissions panel, or suggest a safer alternative."
+        )
+
+    # 🟢 AUTO or 🟡 NOTIFY — execute
+    tier_icon = "🟢" if tier == PermissionTier.AUTO else "🟡"
+    logger.info(f"{tier_icon} Executing shell command (tier={tier.value}): {command}")
+
+    try:
+        result = subprocess.run(
+            command, shell=True, capture_output=True, text=True, timeout=30
+        )
+
         output = ""
         if result.stdout:
             output += result.stdout
         if result.stderr:
             output += f"\n--- STDERR ---\n{result.stderr}"
-            
+
         if not output.strip():
             output = f"Command executed (Return code: {result.returncode}), no output."
-            
+
         # Truncate if too long (LLM context window protection)
         if len(output) > 4000:
             output = output[:4000] + "\n...[Output truncated due to length]..."
-            
+
+        # Log the action
+        pm.log_action(command, tier.value, output, approved_by="auto")
+
+        # 🟡 NOTIFY tier — prepend a notice
+        if tier == PermissionTier.NOTIFY:
+            output = f"🟡 [NOTIFY] Executed: `{command}`\n\n{output}"
+
         return output
     except subprocess.TimeoutExpired:
+        pm.log_action(command, tier.value, "TIMEOUT", approved_by="auto")
         return "Error: Command timed out after 30 seconds."
     except Exception as e:
+        pm.log_action(command, tier.value, f"ERROR: {e}", approved_by="auto")
         return f"Error executing shell command: {e}"
+
+
+def get_system_info() -> str:
+    """Get a snapshot of current system resource usage."""
+    import shutil
+    import platform
+    import os
+
+    info_parts = []
+
+    # OS info
+    info_parts.append(f"OS: {platform.system()} {platform.release()}")
+    info_parts.append(f"Architecture: {platform.machine()}")
+    info_parts.append(f"Hostname: {platform.node()}")
+
+    # CPU
+    try:
+        load1, load5, load15 = os.getloadavg()
+        cpu_count = os.cpu_count() or 1
+        info_parts.append(f"CPU Cores: {cpu_count}")
+        info_parts.append(f"Load Average: {load1:.2f} / {load5:.2f} / {load15:.2f}")
+    except Exception:
+        pass
+
+    # Memory
+    try:
+        result = subprocess.run(
+            "free -h | head -2", shell=True, capture_output=True, text=True, timeout=5
+        )
+        if result.stdout:
+            info_parts.append(f"Memory:\n{result.stdout.strip()}")
+    except Exception:
+        pass
+
+    # Disk
+    try:
+        usage = shutil.disk_usage("/")
+        total_gb = usage.total / (1024 ** 3)
+        used_gb = usage.used / (1024 ** 3)
+        free_gb = usage.free / (1024 ** 3)
+        info_parts.append(
+            f"Disk (/): {used_gb:.1f}GB used / {total_gb:.1f}GB total ({free_gb:.1f}GB free)"
+        )
+    except Exception:
+        pass
+
+    # GPU (nvidia-smi)
+    try:
+        result = subprocess.run(
+            "nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu "
+            "--format=csv,noheader,nounits",
+            shell=True, capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            info_parts.append(f"GPU: {result.stdout.strip()}")
+    except Exception:
+        pass
+
+    # Uptime
+    try:
+        result = subprocess.run("uptime -p", shell=True, capture_output=True, text=True, timeout=5)
+        if result.stdout:
+            info_parts.append(f"Uptime: {result.stdout.strip()}")
+    except Exception:
+        pass
+
+    return "\n".join(info_parts)
+
+
+def manage_files(action: str, source: str, destination: str = "") -> str:
+    """
+    Perform file management operations with permission checks.
+    Actions: copy, move, rename, create_dir, list_tree
+    """
+    from backend.app.safety.permissions import get_permission_manager
+
+    pm = get_permission_manager()
+    src = Path(source).resolve()
+
+    if action == "list_tree":
+        # Safe, auto-tier
+        try:
+            if not src.exists():
+                return f"Error: Path not found: {source}"
+            items = []
+            for item in sorted(src.rglob("*")):
+                rel = item.relative_to(src)
+                depth = len(rel.parts) - 1
+                if depth > 3:  # Limit depth
+                    continue
+                prefix = "  " * depth
+                icon = "📁" if item.is_dir() else "📄"
+                size = ""
+                if item.is_file():
+                    sz = item.stat().st_size
+                    size = f" ({sz:,} bytes)" if sz < 1_000_000 else f" ({sz / 1_000_000:.1f} MB)"
+                items.append(f"{prefix}{icon} {item.name}{size}")
+            return "\n".join(items[:200]) or "Empty directory."
+        except Exception as e:
+            return f"Error: {e}"
+
+    elif action == "create_dir":
+        try:
+            src.mkdir(parents=True, exist_ok=True)
+            pm.log_action(f"mkdir -p {source}", "notify", "OK")
+            return f"🟡 Created directory: {source}"
+        except Exception as e:
+            return f"Error creating directory: {e}"
+
+    elif action in ("copy", "move", "rename"):
+        if not destination:
+            return "Error: destination is required for copy/move/rename."
+        dst = Path(destination).resolve()
+        cmd_map = {"copy": f"cp -r '{src}' '{dst}'", "move": f"mv '{src}' '{dst}'", "rename": f"mv '{src}' '{dst}'"}
+        cmd = cmd_map[action]
+        allowed, tier, reason = pm.is_allowed(cmd)
+        if not allowed:
+            return f"⛔ PERMISSION DENIED for {action}: {reason}"
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+            pm.log_action(cmd, tier.value, result.stdout or "OK")
+            return f"{'🟡' if tier.value == 'notify' else '🟢'} {action.title()} complete: {source} → {destination}"
+        except Exception as e:
+            return f"Error: {e}"
+
+    return f"Unknown action: {action}. Supported: copy, move, rename, create_dir, list_tree"
 
 
 def search_web(query: str) -> str:
@@ -185,8 +389,13 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "write_local_file": write_local_file,
     "list_directory": list_directory,
     "execute_shell": execute_shell,
+    "get_system_info": get_system_info,
+    "manage_files": manage_files,
     "search_web": search_web,
     "read_webpage": read_webpage,
+    "set_reminder": execute_reminder,
+    "add_skill": execute_add_skill,
+    "search_skills": execute_search_skills
 }
 
 # --- Ollama Tool Schemas ---
@@ -302,7 +511,7 @@ AVAILABLE_TOOLS = [
         "type": "function",
         "function": {
             "name": "execute_shell",
-            "description": "Execute a shell command (Bash/Terminal) on the host system. Use this to install packages, run scripts, manage git, etc.",
+            "description": "Execute a shell command (Bash/Terminal) on the host system. Commands are checked against a 3-tier permission system: safe commands run automatically, moderate commands run with notification, dangerous commands require user approval. Use this to install packages, run scripts, manage git, check system status, etc.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -312,6 +521,43 @@ AVAILABLE_TOOLS = [
                     }
                 },
                 "required": ["command"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_system_info",
+            "description": "Get a comprehensive snapshot of system resources: OS info, CPU cores and load, RAM usage, disk space, GPU status (if available), and uptime. Use this when the user asks about system status, performance, or resource usage.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_files",
+            "description": "Perform file management operations: copy, move, rename files/folders, create directories, or list a directory tree. Use this for organizing files, creating project structures, or exploring file systems.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "description": "The operation to perform: 'copy', 'move', 'rename', 'create_dir', or 'list_tree'."
+                    },
+                    "source": {
+                        "type": "string",
+                        "description": "The source file/directory path."
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination path (required for copy, move, rename; not needed for create_dir, list_tree)."
+                    }
+                },
+                "required": ["action", "source"]
             }
         }
     },
@@ -348,8 +594,86 @@ AVAILABLE_TOOLS = [
                 "required": ["url"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_reminder",
+            "description": "Set a one-time reminder for the user. ALAS will send a desktop notification when the time arrives.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The reminder message to display to the user."
+                    },
+                    "minutes_from_now": {
+                        "type": "integer",
+                        "description": "How many minutes from now to trigger the reminder."
+                    }
+                },
+                "required": ["message", "minutes_from_now"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_skill",
+            "description": "Permanently save a new skill or topic to your persistent memory. Use this after you search the web to learn something new.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "skill_name": {
+                        "type": "string",
+                        "description": "A short, memorable name for the skill/topic (e.g., 'Biotech Devices', 'Python Generators')."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A thorough summary or description of what the skill/topic is."
+                    },
+                    "steps": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "A list of concrete steps, rules, or key facts related to the skill."
+                    }
+                },
+                "required": ["skill_name", "description", "steps"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_skills",
+            "description": "Search your persistent skill memory for previously learned skills or topics.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The topic or keyword to search for."
+                    }
+                },
+                "required": ["query"]
+            }
+        }
     }
 ]
+
+def get_all_tools():
+    """Get all available tools, including built-in and plugin tools."""
+    from backend.app.plugins.base import get_plugin_manager
+    tools = AVAILABLE_TOOLS.copy()
+    
+    # Inject plugin tools
+    try:
+        plugin_tools = get_plugin_manager().get_all_tools()
+        tools.extend(plugin_tools)
+    except Exception as e:
+        logger.error(f"Failed to load plugin tools: {e}")
+        
+    return tools
 
 def execute_tool(tool_call) -> Dict[str, Any]:
     """
@@ -363,12 +687,6 @@ def execute_tool(tool_call) -> Dict[str, Any]:
 
     logger.info(f"🛠️ LLM requested tool execution: {name}")
     
-    if name not in TOOL_FUNCTIONS:
-        logger.warning(f"Unknown tool requested: {name}")
-        return {"role": "tool", "content": f"Error: Unknown tool '{name}'."}
-        
-    func = TOOL_FUNCTIONS[name]
-    
     # Extract arguments safely
     try:
         # Some versions of ollama client return a dict, some return a Pydantic object
@@ -376,18 +694,28 @@ def execute_tool(tool_call) -> Dict[str, Any]:
         if isinstance(args, str):
             args = json.loads(args)
     except Exception as e:
-        logger.error(f"Failed to parse tool arguments: {e}")
+        logger.error(f"Failed to parse tool arguments for {name}: {e}")
         args = {}
 
     try:
-        # Execute the Python function with the provided arguments
-        result_content = func(**args)
-        logger.info(f"🛠️ Tool '{name}' executed successfully.")
+        if name in TOOL_FUNCTIONS:
+            func = TOOL_FUNCTIONS[name]
+            result_content = func(**args)
+        else:
+            # Check plugins
+            from backend.app.plugins.base import get_plugin_manager
+            try:
+                result_content = get_plugin_manager().execute_tool(name, args)
+            except ValueError:
+                result_content = f"Error: Unknown tool '{name}'."
+                logger.warning(f"Unknown tool requested: {name}")
+                
+        # Ensure result is a string
+        if not isinstance(result_content, str):
+            result_content = str(result_content)
+            
+        return {"role": "tool", "content": result_content}
         
-        return {
-            "role": "tool",
-            "content": str(result_content)
-        }
     except Exception as e:
         logger.error(f"Error executing tool '{name}': {e}")
         return {

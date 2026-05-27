@@ -15,7 +15,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from backend.app.config import get_settings, ensure_data_dirs
-from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning
+from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks
+from backend.app.proactive.scheduler import get_scheduler
+from backend.app.proactive.monitors import register_monitors
 
 # --- Logging ---
 logging.basicConfig(
@@ -39,8 +41,23 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Profile: SQLite @ {settings.sqlite_db_path}")
     logger.info(f"   Knowledge Graph: NetworkX (persistent JSON)")
     logger.info(f"   Emotion Detection: Active")
-    logger.info("🧬 ALAS Phase 2 ready.")
+    logger.info(f"   Permission Tiers: 🟢 AUTO / 🟡 NOTIFY / 🔴 ASK")
+    logger.info(f"   System Tools: shell, sysinfo, file manager")
+    logger.info("🧬 ALAS Phase 3.5 — Always-On System Integration ready.")
+    
+    # Start Scheduler
+    scheduler = get_scheduler()
+    register_monitors(scheduler)
+    scheduler.start()
+    
+    # Load Plugins
+    from backend.app.plugins.defaults import register_default_plugins
+    register_default_plugins()
+    
     yield
+    
+    # Shutdown
+    scheduler.shutdown()
     logger.info("🧬 ALAS shutting down.")
 
 
@@ -70,6 +87,8 @@ app.include_router(voice.router)
 app.include_router(knowledge.router)
 app.include_router(sync.router)
 app.include_router(learning.router)
+app.include_router(permissions.router)
+app.include_router(tasks.router)
 
 
 # --- Static Files (Frontend) ---
@@ -111,9 +130,19 @@ async def serve_frontend():
 @app.get("/api/status")
 async def system_status():
     """System-wide health and status check."""
+    from backend.app.safety.permissions import get_permission_manager
+    pm = get_permission_manager()
+    actions = pm.get_recent_actions(100)
     return {
         "system": "ALAS — Adaptive Living AI System",
-        "version": "0.3.0",
-        "phase": "Phase 3 — Adaptive Learning",
+        "version": "0.4.0",
+        "phase": "Phase 3.5 — Always-On System Integration",
         "status": "online",
+        "features": {
+            "permission_tiers": True,
+            "shell_executor": True,
+            "system_monitor": True,
+            "file_manager": True,
+        },
+        "actions_logged": len(actions),
     }

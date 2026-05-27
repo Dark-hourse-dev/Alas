@@ -39,15 +39,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   sendBtn.addEventListener('click', sendMessage);
 
+  const stopBtn = document.getElementById('btn-stop-generation');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      chat.stopGeneration();
+    });
+  }
+
   function sendMessage() {
     const msg = input.value.trim();
-    if (!msg || chat.isStreaming) return;
+    if (!msg && !document.getElementById('file-input')?.files?.length) return;
+    if (chat.isStreaming) return;
 
-    // Check for attached image
-    const imageInput = document.getElementById('image-input');
-    if (imageInput.files.length > 0) {
-      sendImageMessage(msg, imageInput.files[0]);
-    } else {
+    // Check for attached file
+    const fileInput = document.getElementById('file-input');
+    if (fileInput && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if (file.type.startsWith('image/')) {
+        sendImageMessage(msg, file);
+      } else {
+        sendFileMessage(msg, file);
+      }
+    } else if (msg) {
       chat.send(msg);
     }
 
@@ -55,53 +68,76 @@ document.addEventListener('DOMContentLoaded', () => {
     input.style.height = 'auto';
     sendBtn.disabled = true;
     charCount.textContent = '';
-    clearImagePreview();
+    clearFilePreview();
   }
 
-  // --- Image Upload ---
-  const attachBtn = document.getElementById('btn-attach-image');
-  const imageInput = document.getElementById('image-input');
+  // --- File Upload (supports ALL file types) ---
+  const attachBtn = document.getElementById('btn-attach-file');
+  const fileInput = document.getElementById('file-input');
 
-  attachBtn?.addEventListener('click', () => imageInput?.click());
+  // Fallback: also check old IDs for backwards compat
+  const attachBtnAlt = attachBtn || document.getElementById('btn-attach-image');
+  const fileInputAlt = fileInput || document.getElementById('image-input');
 
-  imageInput?.addEventListener('change', () => {
-    if (imageInput.files.length > 0) {
-      const file = imageInput.files[0];
-      attachBtn.classList.add('has-image');
+  attachBtnAlt?.addEventListener('click', () => fileInputAlt?.click());
+
+  fileInputAlt?.addEventListener('change', () => {
+    if (fileInputAlt.files.length > 0) {
+      const file = fileInputAlt.files[0];
+      attachBtnAlt.classList.add('has-image');
 
       // Show preview
       const preview = document.createElement('div');
       preview.className = 'image-preview';
-      preview.id = 'image-preview';
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
+      preview.id = 'file-preview';
+
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      } else {
+        const icon = document.createElement('span');
+        icon.textContent = '📄';
+        icon.style.fontSize = '24px';
+        preview.appendChild(icon);
+      }
+
       const label = document.createElement('span');
-      label.textContent = file.name;
+      label.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-image';
       removeBtn.textContent = '×';
-      removeBtn.onclick = clearImagePreview;
-      preview.appendChild(img);
+      removeBtn.onclick = clearFilePreview;
       preview.appendChild(label);
       preview.appendChild(removeBtn);
 
-      const existing = document.getElementById('image-preview');
+      // Remove any existing preview
+      const existing = document.getElementById('file-preview');
       if (existing) existing.remove();
       document.querySelector('.input-area').appendChild(preview);
+
+      // Enable send button when file is attached
+      sendBtn.disabled = false;
     }
   });
 
-  function clearImagePreview() {
-    const preview = document.getElementById('image-preview');
+  function clearFilePreview() {
+    const preview = document.getElementById('file-preview');
     if (preview) preview.remove();
-    const imageInput = document.getElementById('image-input');
-    if (imageInput) imageInput.value = '';
-    attachBtn?.classList.remove('has-image');
+    if (fileInputAlt) fileInputAlt.value = '';
+    attachBtnAlt?.classList.remove('has-image');
   }
 
   async function sendImageMessage(prompt, file) {
     // Show user message with image indicator
+    const welcome = document.getElementById('welcome-message');
+    if (welcome) welcome.style.display = 'none';
+
     chat.addMessage('user', `📷 [Image: ${file.name}] ${prompt || 'Describe this image'}`);
+
+    // Show typing indicator
+    chat.isStreaming = true;
+    document.getElementById('typing-indicator').style.display = 'flex';
 
     const formData = new FormData();
     formData.append('image', file);
@@ -110,15 +146,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const res = await fetch('/api/chat/vision', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+      }
+
       const data = await res.json();
 
-      if (data.status === 'success') {
+      chat.isStreaming = false;
+      document.getElementById('typing-indicator').style.display = 'none';
+
+      if (data.status === 'success' && data.description) {
         chat.addMessage('assistant', data.description);
+      } else if (data.status === 'unavailable') {
+        chat.addMessage('assistant', `⚠️ Vision model not available. ${data.error || 'Install a vision model with: ollama pull llava'}`);
       } else {
-        chat.addMessage('assistant', `⚠️ ${data.error || 'Vision analysis unavailable'}`);
+        chat.addMessage('assistant', `⚠️ ${data.error || 'Vision analysis returned no result. Make sure a vision model (llava/moondream) is installed.'}`);
       }
     } catch (err) {
+      chat.isStreaming = false;
+      document.getElementById('typing-indicator').style.display = 'none';
       chat.addMessage('assistant', `❌ Image analysis failed: ${err.message}`);
+    }
+  }
+
+  async function sendFileMessage(prompt, file) {
+    /**
+     * Handle non-image file uploads.
+     * Reads the file content and sends it to the chat as context.
+     */
+    const welcome = document.getElementById('welcome-message');
+    if (welcome) welcome.style.display = 'none';
+
+    // Check file size (max 100KB for text injection)
+    if (file.size > 100 * 1024) {
+      chat.addMessage('user', `📄 [File: ${file.name}] ${prompt || 'Analyze this file'}`);
+      chat.addMessage('assistant', `⚠️ File is too large (${(file.size / 1024).toFixed(1)} KB). Maximum size for inline analysis is 100KB. Try uploading a smaller file or copy-paste the relevant section.`);
+      return;
+    }
+
+    try {
+      const fileContent = await file.text();
+      const fileMsg = prompt
+        ? `📄 [File: ${file.name}] ${prompt}`
+        : `📄 [File: ${file.name}] Please analyze this file.`;
+
+      // Build a message that includes the file content
+      const fullMessage = `${prompt || 'Please analyze this file.'}\n\n--- File: ${file.name} ---\n\`\`\`\n${fileContent}\n\`\`\`\n--- End of File ---`;
+
+      chat.addMessage('user', fileMsg);
+      chat.send(fullMessage);
+    } catch (err) {
+      chat.addMessage('user', `📄 [File: ${file.name}]`);
+      chat.addMessage('assistant', `❌ Could not read file: ${err.message}. This file type may not be supported for direct reading.`);
     }
   }
 
@@ -221,10 +301,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = p.preferred_name || p.name || 'New User';
       document.getElementById('profile-name').textContent = name;
       document.getElementById('profile-style').textContent = p.communication_style || 'balanced';
-      document.getElementById('profile-avatar').querySelector('span').textContent = name[0]?.toUpperCase() || '?';
+      
+      const savedAvatar = localStorage.getItem('alas_custom_avatar');
+      document.getElementById('profile-avatar').querySelector('span').textContent = savedAvatar || name[0]?.toUpperCase() || '?';
+      
       document.getElementById('stat-interactions').textContent = p.interaction_count || 0;
     } catch (e) {}
   }
+
+  // --- Custom Avatar ---
+  document.getElementById('profile-avatar').addEventListener('click', () => {
+    const current = document.getElementById('profile-avatar').querySelector('span').textContent;
+    const newAvatar = prompt("Enter a custom emoji or initial for your avatar:", current);
+    if (newAvatar) {
+        localStorage.setItem('alas_custom_avatar', newAvatar);
+        document.getElementById('profile-avatar').querySelector('span').textContent = newAvatar;
+    }
+  });
 
   loadProfile();
   memory.fetchStats();

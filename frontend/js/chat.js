@@ -13,39 +13,62 @@ class ALASChat {
     this.voiceOutputEnabled = false;
     this.onStatusChange = null;
     this.onMemoryUpdate = null;
+    this._reconnectAttempts = 0;
+    this._maxReconnectDelay = 15000;
+    this._useRestFallback = false;
   }
 
   connect() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${location.host}/api/chat/ws`;
 
-    this.ws = new WebSocket(url);
+    try {
+      this.ws = new WebSocket(url);
+    } catch (e) {
+      console.warn('WebSocket creation failed, using REST fallback:', e);
+      this._useRestFallback = true;
+      this._setStatus('connected', 'Connected (REST)');
+      return;
+    }
 
     this.ws.onopen = () => {
+      this._reconnectAttempts = 0;
+      this._useRestFallback = false;
       this._setStatus('connected', 'Connected');
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (e) => {
       this._setStatus('disconnected', 'Disconnected');
-      setTimeout(() => this.connect(), 3000);
+      // Exponential backoff: 1s, 2s, 4s, 8s, max 15s
+      this._reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, this._reconnectAttempts - 1), this._maxReconnectDelay);
+      console.log(`WebSocket closed. Reconnecting in ${delay}ms (attempt ${this._reconnectAttempts})`);
+      setTimeout(() => this.connect(), delay);
     };
 
-    this.ws.onerror = () => {
-      this._setStatus('error', 'Connection error');
+    this.ws.onerror = (e) => {
+      console.error('WebSocket error:', e);
+      // After 3 failed attempts, switch to REST fallback
+      if (this._reconnectAttempts >= 3) {
+        console.warn('WebSocket unstable. Switching to REST API fallback.');
+        this._useRestFallback = true;
+        this._setStatus('connected', 'Connected (REST)');
+      } else {
+        this._setStatus('error', 'Connection error');
+      }
     };
 
     this.ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      this._handleMessage(data);
+      try {
+        const data = JSON.parse(event.data);
+        this._handleMessage(data);
+      } catch (e) {
+        console.error('Failed to parse WebSocket message:', e);
+      }
     };
   }
 
   send(message) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      this._showError('Not connected to ALAS. Reconnecting...');
-      this.connect();
-      return;
-    }
     if (this.isStreaming) return;
 
     // Hide welcome message
@@ -59,18 +82,90 @@ class ALASChat {
     // Show typing indicator
     this.isStreaming = true;
     document.getElementById('typing-indicator').style.display = 'flex';
+    document.getElementById('stop-generation-container').style.display = 'flex';
 
     // Create assistant message placeholder
     this._currentAssistant = this._addMessage('assistant', '', true);
 
+    // Use REST fallback if WebSocket is not available
+    if (this._useRestFallback || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this._sendViaRest(message);
+      return;
+    }
+
     // Send via WebSocket
-    this.ws.send(JSON.stringify({
-      message,
-      session_id: this.sessionId,
-      mode: this.mode,
-      user_id: this.userId,
-      history: this.history.slice(-10),
-    }));
+    try {
+      this.ws.send(JSON.stringify({
+        message,
+        session_id: this.sessionId,
+        mode: this.mode,
+        user_id: this.userId,
+        history: this.history.slice(-10),
+      }));
+    } catch (e) {
+      console.error('WebSocket send failed, falling back to REST:', e);
+      this._sendViaRest(message);
+    }
+  }
+
+  async _sendViaRest(message) {
+    /**
+     * REST API fallback for when WebSocket is unavailable.
+     * Critical for ngrok/tunnel deployments where WSS may not work.
+     */
+    this.currentController = new AbortController();
+    try {
+      const res = await fetch('/api/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: this.currentController.signal,
+        body: JSON.stringify({
+          message,
+          session_id: this.sessionId,
+          mode: this.mode,
+          user_id: this.userId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Simulate the streaming completion flow
+      if (this._currentAssistant) {
+        const textEl = this._currentAssistant.querySelector('.message-text');
+        const cursor = this._currentAssistant.querySelector('.cursor-blink');
+        if (cursor) cursor.remove();
+
+        textEl.innerHTML = this._formatMarkdown(data.response || 'No response received.');
+        this.history.push({ role: 'assistant', content: data.response || '' });
+
+        // Add feedback buttons
+        const rawContent = data.response || '';
+        const feedbackHtml = `
+          <div class="message-feedback">
+            <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'positive', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👍</button>
+            <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'negative', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👎</button>
+          </div>
+        `;
+        this._currentAssistant.querySelector('.message-time').insertAdjacentHTML('afterend', feedbackHtml);
+      }
+
+      this.isStreaming = false;
+      document.getElementById('typing-indicator').style.display = 'none';
+      document.getElementById('stop-generation-container').style.display = 'none';
+      if (this.onMemoryUpdate) this.onMemoryUpdate(data.memory_count || 0);
+      this._scrollToBottom();
+
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      this.isStreaming = false;
+      document.getElementById('typing-indicator').style.display = 'none';
+      document.getElementById('stop-generation-container').style.display = 'none';
+      this._showError(`Failed to get response: ${err.message}`);
+    }
   }
 
   _handleMessage(data) {
@@ -84,6 +179,7 @@ class ALASChat {
       case 'done':
         this.isStreaming = false;
         document.getElementById('typing-indicator').style.display = 'none';
+        document.getElementById('stop-generation-container').style.display = 'none';
         if (this._currentAssistant) {
           const cursor = this._currentAssistant.querySelector('.cursor-blink');
           if (cursor) cursor.remove();
@@ -116,8 +212,43 @@ class ALASChat {
       case 'error':
         this.isStreaming = false;
         document.getElementById('typing-indicator').style.display = 'none';
+        document.getElementById('stop-generation-container').style.display = 'none';
         this._showError(data.content);
         break;
+    }
+  }
+
+  /**
+   * Public method — safe to call from app.js and other modules.
+   * Wraps the internal _addMessage so external code can render messages.
+   */
+  addMessage(role, content) {
+    return this._addMessage(role, content, false);
+  }
+
+  stopGeneration() {
+    if (!this.isStreaming) return;
+    this.isStreaming = false;
+    document.getElementById('typing-indicator').style.display = 'none';
+    document.getElementById('stop-generation-container').style.display = 'none';
+    
+    // Stop REST call if any
+    if (this.currentController) {
+      this.currentController.abort();
+      this.currentController = null;
+    }
+    
+    // Stop WebSocket call by reconnecting
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.close();
+      this.connect(); // Reconnect immediately
+    }
+    
+    if (this._currentAssistant) {
+      const cursor = this._currentAssistant.querySelector('.cursor-blink');
+      if (cursor) cursor.remove();
+      const textEl = this._currentAssistant.querySelector('.message-text');
+      textEl.innerHTML += ' <i>[Generation stopped by user]</i>';
     }
   }
 

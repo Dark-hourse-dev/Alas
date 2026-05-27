@@ -116,6 +116,7 @@ class VisionEngine:
         image_b64 = base64.b64encode(image_data).decode("utf-8")
 
         try:
+            logger.info(f"Running vision analysis with model: {self._vision_model}, task: {task}")
             response = await self._client.chat(
                 model=self._vision_model,
                 messages=[{
@@ -125,20 +126,34 @@ class VisionEngine:
                 }],
             )
 
-            content = response.message.content
+            # Safely extract content — handle None, empty, and various response formats
+            content = None
+            if hasattr(response, 'message') and response.message:
+                content = getattr(response.message, 'content', None)
+            elif isinstance(response, dict):
+                msg = response.get('message', {})
+                content = msg.get('content', None) if isinstance(msg, dict) else None
+
+            if not content or content.strip() == '':
+                logger.warning(f"Vision model returned empty content. Response: {response}")
+                return {
+                    "status": "error",
+                    "error": "Vision model returned an empty response. The image may be too complex or the model may need more time. Try again or use a different vision model.",
+                    "model": self._vision_model,
+                }
 
             return {
                 "status": "success",
-                "description": content,
+                "description": content.strip(),
                 "model": self._vision_model,
                 "task": task,
             }
 
         except Exception as e:
-            logger.error(f"Vision analysis failed: {e}")
+            logger.error(f"Vision analysis failed: {e}", exc_info=True)
             return {
                 "status": "error",
-                "error": str(e),
+                "error": f"Vision analysis failed: {str(e)}. Make sure the vision model is running (ollama list).",
             }
 
     async def check_status(self) -> dict:

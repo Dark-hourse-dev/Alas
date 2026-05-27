@@ -14,6 +14,7 @@ import ollama
 from backend.app.config import get_settings
 from backend.app.llm.prompts import build_system_prompt
 from backend.app.memory.retrieval import MemoryRetriever
+from backend.app.proactive.context import get_context_engine
 
 
 class LLMEngine:
@@ -67,8 +68,13 @@ class LLMEngine:
 
         # Inject behavioral evolution modifiers
         from backend.app.learning.evolution import get_evolution_system
-        modifiers = get_evolution_system().get_prompt_modifiers()
+        evolution = get_evolution_system()
+        modifiers = evolution.get_prompt_modifiers()
         system_prompt += f"\n\n[BEHAVIORAL DIRECTIVE]: {modifiers}"
+        
+        # Inject Phase 4 Context
+        env_context = get_context_engine().build_context_prompt(evolution.current_genome.get("proactivity_threshold", 0.5))
+        system_prompt += env_context
 
         # Compose messages
         messages = [{"role": "system", "content": system_prompt}]
@@ -142,8 +148,13 @@ class LLMEngine:
 
         # Inject behavioral evolution modifiers
         from backend.app.learning.evolution import get_evolution_system
-        modifiers = get_evolution_system().get_prompt_modifiers()
+        evolution = get_evolution_system()
+        modifiers = evolution.get_prompt_modifiers()
         system_prompt += f"\n\n[BEHAVIORAL DIRECTIVE]: {modifiers}"
+        
+        # Inject Phase 4 Context
+        env_context = get_context_engine().build_context_prompt(evolution.current_genome.get("proactivity_threshold", 0.5))
+        system_prompt += env_context
 
         # Compose messages
         messages = [{"role": "system", "content": system_prompt}]

@@ -137,6 +137,14 @@ def build_system_prompt(mode: str = "casual", user_context: str = "") -> str:
         "- Never fabricate memories you don't have in your context",
         "- If unsure about a past detail, say so honestly",
         "- Always prioritize the user's current needs while building on history",
+        "",
+        "[SKILL LEARNING PROTOCOL]:",
+        "If the user asks you to 'learn a skill', 'learn about X', or 'research Y':",
+        "1. Immediately use `search_web` to find information about the topic.",
+        "2. If necessary, use `read_webpage` on the top links to gather deep context.",
+        "3. Synthesize the rules, steps, and key facts.",
+        "4. Call `add_skill` to permanently save this knowledge to your persistent memory.",
+        "5. Confirm to the user that you have learned the skill.",
     ])
 
     return "\n".join(parts)
