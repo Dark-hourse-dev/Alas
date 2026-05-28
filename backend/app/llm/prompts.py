@@ -129,6 +129,44 @@ def build_system_prompt(mode: str = "casual", user_context: str = "") -> str:
             "=== End Memory Context ===",
         ])
 
+    # Phase 6: Live Sensory Context
+    try:
+        from backend.app.sensors.webcam import get_webcam_sensor
+        import time
+        sensor = get_webcam_sensor()
+        state = sensor.get_state()
+        if state and state.get("user_present"):
+            age = time.time() - state.get("last_updated", 0)
+            parts.extend([
+                "",
+                "=== Live Sensory Feed (Phase 6) ===",
+                f"User is currently VISIBLE in the webcam.",
+                f"Attention: {state.get('attention', 'unknown').capitalize()}",
+                f"Facial Emotion: {state.get('emotion', 'neutral').capitalize()}",
+                f"(Feed lag: {age:.1f}s)",
+                "Use this context to dynamically adapt your tone (e.g. be brief if they look distracted, comforting if they look stressed).",
+                "=== End Sensory Feed ===",
+            ])
+    except Exception as e:
+        pass
+
+    # Phase 10: Meta-Intelligence (Internal Monologue)
+    try:
+        from backend.app.cognition.monologue import get_monologue
+        monologue = get_monologue()
+        latest_thought = monologue.get_latest_thought()
+        if latest_thought:
+            parts.extend([
+                "",
+                "=== Internal Monologue (Phase 10) ===",
+                "You have a continuous internal stream of consciousness running in the background.",
+                f"Your most recent background thought was: \"{latest_thought}\"",
+                "Use this to maintain a continuous sense of self, even when idle.",
+                "=== End Internal Monologue ===",
+            ])
+    except Exception as e:
+        pass
+
     parts.extend([
         "",
         "Important guidelines:",

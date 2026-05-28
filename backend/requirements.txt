@@ -38,3 +38,29 @@ Pillow
 mediapipe
 opencv-python
 easyocr
+
+# Phase 9 Security
+cryptography
+
+# Phase 8 Social & Swarm
+networkx
+
+# Phase 4 Task Orchestrator
+langgraph
+
+# Phase 4 Web Browsing
+playwright
+
+# Phase 4 Data Agent
+PyPDF2
+python-docx
+pandas
+openpyxl
+tabulate
+
+# Phase 4 IoT
+paho-mqtt
+
+# Phase 7 Embodied Intelligence
+pybullet
+pymavlink

@@ -283,6 +283,153 @@ def get_system_info() -> str:
     return "\n".join(info_parts)
 
 
+def execute_get_user_state() -> str:
+    """Get the live user state (presence, emotion, attention) from the webcam sensor."""
+    from backend.app.sensors.webcam import get_webcam_sensor
+    import time
+    
+    sensor = get_webcam_sensor()
+    state = sensor.get_state()
+    
+    if state.get("error"):
+        return f"Webcam sensor error: {state['error']}"
+        
+    if not state.get("user_present"):
+        return "User is not currently visible to the webcam."
+        
+    age = time.time() - state.get("last_updated", 0)
+    
+    return (
+        f"**User Presence**: Detected\n"
+        f"**Attention**: {state.get('attention', 'unknown').capitalize()}\n"
+        f"**Emotion**: {state.get('emotion', 'neutral').capitalize()}\n"
+        f"*(Data is {age:.1f} seconds old)*"
+    )
+
+
+def execute_system_control(action: str, value: str = "") -> str:
+    """Control OS settings like volume, brightness, or launch apps."""
+    from backend.app.safety.permissions import get_permission_manager
+    pm = get_permission_manager()
+    
+    if action == "volume":
+        cmd = f"amixer -D pulse sset Master {value}%"
+    elif action == "brightness":
+        cmd = f"brightnessctl set {value}%"
+    elif action == "open_app":
+        # Launch app in background safely without blocking
+        cmd = f"nohup {value} > /dev/null 2>&1 &"
+    else:
+        return f"Unknown system control action: {action}"
+        
+    allowed, tier, reason = pm.is_allowed(cmd)
+    if not allowed:
+        return f"⛔ PERMISSION DENIED: {reason}"
+        
+    try:
+        subprocess.run(cmd, shell=True, check=True)
+        pm.log_action(cmd, tier.value, "OK", approved_by="auto")
+        return f"🟢 System control '{action}' executed successfully."
+    except Exception as e:
+        return f"Error executing system control '{action}': {e}"
+
+
+def execute_read_clipboard() -> str:
+    """Read the current content of the system clipboard."""
+    try:
+        # Try wayland first
+        result = subprocess.run(["wl-paste"], capture_output=True, text=True, timeout=2)
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+            
+        # Fallback to xclip
+        result = subprocess.run(["xclip", "-selection", "clipboard", "-o"], capture_output=True, text=True, timeout=2)
+        if result.returncode == 0:
+            return result.stdout.strip()
+            
+        return "Clipboard is empty or unsupported on this display server."
+    except Exception as e:
+        return f"Error reading clipboard: {e}"
+
+
+def execute_analyze_screen(prompt: str = "") -> str:
+    """Take a screenshot of the user's screen and analyze it with ALAS Vision."""
+    import tempfile
+    import asyncio
+    
+    try:
+        from PIL import ImageGrab
+        # Requires scrot or xcb on Linux
+        img = ImageGrab.grab(all_screens=True)
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            img.save(tmp.name)
+            with open(tmp.name, "rb") as f:
+                image_bytes = f.read()
+    except Exception as e:
+        return f"Failed to capture screen (Make sure scrot is installed if on Linux): {e}"
+        
+    try:
+        from backend.app.llm.vision import get_vision_engine
+        
+        async def run_vision():
+            engine = await get_vision_engine()
+            return await engine.analyze_image(image_bytes, prompt, task="analyze")
+            
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                res = pool.submit(lambda: asyncio.run(run_vision())).result(timeout=60)
+        else:
+            res = asyncio.run(run_vision())
+            
+        if res.get("status") == "success":
+            return f"👀 Screen Analysis:\n{res.get('description')}"
+        else:
+            return f"Vision Error: {res.get('error')}"
+    except Exception as e:
+        return f"Failed to analyze screen: {e}"
+
+
+def execute_send_notification(title: str, message: str) -> str:
+    """Send a system-level desktop notification to the user."""
+    try:
+        subprocess.run(["notify-send", title, message], check=False)
+        return "Notification sent successfully."
+    except FileNotFoundError:
+        return "notify-send command not found on this OS."
+    except Exception as e:
+        return f"Failed to send notification: {e}"
+
+
+def execute_browser_action(url: str, action: str, selector: str = "", text: str = "") -> str:
+    """Execute a single browser action synchronously."""
+    from backend.app.tools.browser_agent import execute_browser_action as _browser_action
+    return _browser_action(url, action, selector, text)
+
+
+def process_document(file_path: str) -> str:
+    from backend.app.tools.data_agent import process_document as _process_document
+    return _process_document(file_path)
+
+def query_database(db_uri: str, query: str) -> str:
+    from backend.app.tools.data_agent import query_database as _query_database
+    return _query_database(db_uri, query)
+
+
+def get_home_status(entity_id: str = "") -> str:
+    from backend.app.tools.iot_agent import get_home_status as _get_home_status
+    return _get_home_status(entity_id)
+
+def control_home_device(entity_id: str, action: str, parameters: dict = None) -> str:
+    from backend.app.tools.iot_agent import control_home_device as _control_home_device
+    return _control_home_device(entity_id, action, parameters)
+
+def publish_mqtt_message(topic: str, message: str) -> str:
+    from backend.app.tools.iot_agent import publish_mqtt_message as _publish_mqtt_message
+    return _publish_mqtt_message(topic, message)
+
+
 def manage_files(action: str, source: str, destination: str = "") -> str:
     """
     Perform file management operations with permission checks.
@@ -401,27 +548,33 @@ def execute_research_topic(topic: str, depth: str = "standard") -> str:
 
 
 def execute_create_plan(goal: str) -> str:
-    """Create a multi-step execution plan (synchronous wrapper)."""
+    """Create and automatically execute a multi-step execution plan using LangGraph."""
     import asyncio
-    from backend.app.planning.planner import generate_plan
-    from backend.app.planning.executor import store_plan
+    from backend.app.planning.langgraph_orchestrator import run_langgraph_plan
 
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            # We're inside an async context — use a thread
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as pool:
-                plan = pool.submit(
-                    lambda: asyncio.run(generate_plan(goal))
-                ).result(timeout=60)
+                final_state = pool.submit(
+                    lambda: asyncio.run(run_langgraph_plan(goal))
+                ).result(timeout=600)  # Extended timeout for full execution
         else:
-            plan = asyncio.run(generate_plan(goal))
+            final_state = asyncio.run(run_langgraph_plan(goal))
 
-        store_plan(plan)
-        return plan.summary() + f"\n\n**Plan ID:** `{plan.id}`\nTo execute, tell the user to approve the plan."
+        if final_state.get("error"):
+            return f"❌ Plan execution failed:\n{final_state['error']}\n\nPast successful steps:\n" + "\n".join(
+                [f"- {step[0]}: {step[1]}" for step in final_state.get("past_steps", [])]
+            )
+
+        output = ["✅ Plan executed successfully using LangGraph!"]
+        for step_desc, result in final_state.get("past_steps", []):
+            output.append(f"**Step**: {step_desc}\n**Result**: {result}\n")
+
+        return "\n".join(output)
     except Exception as e:
-        return f"Failed to create plan: {e}"
+        return f"Failed to execute plan via LangGraph: {e}"
 
 
 def execute_submit_background_task(name: str, task_type: str, params: str = "{}") -> str:
@@ -463,6 +616,87 @@ def execute_track_time(task_name: str, duration_minutes: int) -> str:
 def execute_visualize_data(dataset_info: str) -> str:
     from backend.app.tools.integrations import visualize_data
     return visualize_data(dataset_info)
+
+
+# --- Phase 7 (Embodied Intelligence) ---
+def execute_simulate_physics(scenario: str) -> str:
+    from backend.app.embodied.physics_sim import simulate_physics
+    return simulate_physics(scenario)
+
+def execute_drone_action(action: str, **kwargs) -> str:
+    from backend.app.embodied.drone_agent import execute_drone_command
+    return execute_drone_command(action, **kwargs)
+
+
+# --- Phase 8 (Social & Swarm Intelligence) ---
+def execute_dispatch_swarm_task(task_type: str, payload_json: str) -> str:
+    """Dispatch a task to the Swarm blackboard and wait for consensus."""
+    import asyncio
+    import json
+    from backend.app.swarm.blackboard import Blackboard
+    from backend.app.swarm.meta_agent import MetaAgent
+    from backend.app.swarm.sub_agents import initialize_swarm
+    
+    try:
+        payload = json.loads(payload_json)
+    except json.JSONDecodeError:
+        return "Error: payload_json must be valid JSON."
+        
+    async def run_swarm():
+        bb = Blackboard()
+        meta = MetaAgent(bb)
+        agents = initialize_swarm(bb)
+        for name, ag in agents.items():
+            meta.register_agent(name, ag)
+            
+        # Dispatch task based on type (e.g., 'code' or 'safety_check')
+        await meta.dispatch_task(task_type, payload)
+        
+        # Wait for consensus or result
+        for _ in range(30): # Wait up to 30 seconds
+            await asyncio.sleep(1)
+            # Depending on task type, we check the corresponding result topic
+            result_topic = f"task_{task_type}_result"
+            if task_type == 'safety_check':
+                result_topic = 'safety_check_result'
+                
+            state = bb.read_state(result_topic)
+            if state:
+                latest = state[-1]['data']
+                return f"🐝 **Swarm Agent [{latest.get('agent', 'Unknown')}] responded:**\n{latest.get('response', latest.get('explanation', 'Done'))}"
+                
+        return "Swarm timeout: No agents responded in time."
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(lambda: asyncio.run(run_swarm())).result(timeout=45)
+        else:
+            return asyncio.run(run_swarm())
+    except Exception as e:
+        return f"Swarm error: {e}"
+
+
+# --- Phase 9 (Infrastructure Fortress) ---
+def execute_system_snapshot(reason: str = "manual") -> str:
+    from backend.app.safety.fortress import execute_system_snapshot
+    return execute_system_snapshot(reason)
+
+def execute_heal_memory() -> str:
+    from backend.app.safety.fortress import execute_heal_memory
+    return execute_heal_memory()
+
+
+# --- Phase 10 (Meta-Intelligence) ---
+def execute_trigger_dream() -> str:
+    from backend.app.cognition.dream import execute_dream_cycle
+    return execute_dream_cycle()
+
+def execute_self_improvement() -> str:
+    from backend.app.learning.lora_trainer import execute_self_improvement
+    return execute_self_improvement()
 
 
 # --- Phase 5 (Cognitive Superpowers) ---
@@ -520,6 +754,17 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "list_directory": list_directory,
     "execute_shell": execute_shell,
     "get_system_info": get_system_info,
+    "get_user_state": execute_get_user_state,
+    "system_control": execute_system_control,
+    "read_clipboard": execute_read_clipboard,
+    "analyze_screen": execute_analyze_screen,
+    "send_notification": execute_send_notification,
+    "browser_action": execute_browser_action,
+    "process_document": process_document,
+    "query_database": query_database,
+    "get_home_status": get_home_status,
+    "control_home_device": control_home_device,
+    "publish_mqtt_message": publish_mqtt_message,
     "manage_files": manage_files,
     "search_web": search_web,
     "read_webpage": read_webpage,
@@ -538,6 +783,17 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "cloud_sync": execute_cloud_sync,
     "track_time": execute_track_time,
     "visualize_data": execute_visualize_data,
+    # Phase 7 — Embodied Intelligence
+    "simulate_physics": execute_simulate_physics,
+    "drone_action": execute_drone_action,
+    # Phase 8 — Swarm Intelligence
+    "dispatch_swarm_task": execute_dispatch_swarm_task,
+    # Phase 9 — Infrastructure Fortress
+    "system_snapshot": execute_system_snapshot,
+    "heal_memory": execute_heal_memory,
+    # Phase 10 — Meta-Intelligence
+    "trigger_dream": execute_trigger_dream,
+    "self_improve": execute_self_improvement,
     # Phase 5 — Cognitive Superpowers
     "deep_think": execute_deep_think,
     "simulate_outcome": execute_simulate_outcome,
@@ -678,6 +934,219 @@ AVAILABLE_TOOLS = [
                 "type": "object",
                 "properties": {},
                 "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_state",
+            "description": "Get the live physical state of the user via webcam sensors (presence, attention, basic emotion). Use this to see if the user is happy, stressed, distracted, or currently away from their computer.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "system_control",
+            "description": "Control system settings like volume, brightness, or launch applications. Use this to adjust the computer's physical state or open software for the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "description": "The action to perform: 'volume', 'brightness', or 'open_app'."
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "The value for the action. For volume/brightness, use a percentage (e.g., '50'). For open_app, use the executable name (e.g., 'code' or 'firefox')."
+                    }
+                },
+                "required": ["action", "value"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_clipboard",
+            "description": "Read the current text content of the user's system clipboard. Use this when the user asks you to 'read what I copied' or 'explain my clipboard'.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_screen",
+            "description": "Take a screenshot of the user's current screen and analyze it using the Vision Engine. Use this when the user asks 'what is on my screen' or wants you to read something they are looking at.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Optional specific question about the screen (e.g., 'What error message is shown?')."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_notification",
+            "description": "Send a system-level desktop notification to the user. Use this to alert them when a background task finishes or to send a proactive message.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the notification."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The body message of the notification."
+                    }
+                },
+                "required": ["title", "message"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "browser_action",
+            "description": "Execute a dynamic browser action (navigate, click, fill, extract) using a headless browser. Use this to interact with dynamic sites, login portals, or complex web apps. Always provide the URL of the page you are acting upon, as the browser restores session cookies but needs the URL to reload the DOM.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The full URL of the page to act upon. REQUIRED."
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "The action to perform: 'navigate', 'click', 'fill', or 'extract'."
+                    },
+                    "selector": {
+                        "type": "string",
+                        "description": "The CSS selector for the element to click or fill (e.g., 'button#login', 'input[name=\"password\"]')."
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "The text to type into the element (used only for 'fill' action)."
+                    }
+                },
+                "required": ["url", "action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "process_document",
+            "description": "Extract text and data from complex documents including PDFs, Word documents (.docx), and Excel spreadsheets (.xlsx, .csv). Use this when the user asks you to read or summarize a specific file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the document to process."
+                    }
+                },
+                "required": ["file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_database",
+            "description": "Execute a read-only SQL query against a database. Use this to analyze data stored in SQLite, PostgreSQL, or MySQL databases.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "db_uri": {
+                        "type": "string",
+                        "description": "The SQLAlchemy connection URI (e.g., 'sqlite:///data.db' or 'postgresql://user:pass@localhost/db')."
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The raw SQL SELECT query to execute."
+                    }
+                },
+                "required": ["db_uri", "query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_home_status",
+            "description": "Get the status of smart home devices or sensors from Home Assistant. If entity_id is not specified, returns a list of active devices.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {
+                        "type": "string",
+                        "description": "The specific Home Assistant entity ID (e.g. 'light.living_room' or 'sensor.temperature'). Leave blank for overall summary."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "control_home_device",
+            "description": "Control a smart home device connected to Home Assistant. Allows turning on/off switches, adjusting light brightness, setting thermostats, etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {
+                        "type": "string",
+                        "description": "The Home Assistant entity ID (e.g., 'light.kitchen')."
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "The action to perform (e.g., 'turn_on', 'turn_off', 'toggle', 'set_temperature')."
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Optional key-value parameters for the action (e.g. {'brightness': 150} or {'temperature': 22.5})."
+                    }
+                },
+                "required": ["entity_id", "action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "publish_mqtt_message",
+            "description": "Publish a message to an MQTT broker. Useful for raw sensor triggers or custom DIY automations.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "The MQTT topic (e.g., 'home/living_room/light')."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message body to publish (usually a string or JSON string)."
+                    }
+                },
+                "required": ["topic", "message"]
             }
         }
     },
@@ -892,7 +1361,7 @@ AVAILABLE_TOOLS = [
         "type": "function",
         "function": {
             "name": "create_plan",
-            "description": "Create a structured multi-step execution plan for a complex goal. Decomposes the goal into concrete, sequential steps with specific tools and rollback commands. Use this when the user asks you to do something that requires multiple steps (e.g., 'set up a project', 'organize my files', 'deploy my app').",
+            "description": "Automatically plan and execute a complex, multi-step goal using the LangGraph orchestrator. The agent will decompose the goal, run the steps sequentially, and dynamically backtrack or replan if any step fails. Use this for complex system setups or workflows.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1058,6 +1527,122 @@ AVAILABLE_TOOLS = [
                     }
                 },
                 "required": ["scenario"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "simulate_physics",
+            "description": "Run a 3D headless physics simulation (PyBullet) to test physical outcomes in a virtual sandbox before taking action. Supported scenarios: 'drop_test'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario": {
+                        "type": "string",
+                        "description": "The physical scenario to simulate (e.g., 'drop_test')."
+                    }
+                },
+                "required": ["scenario"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "drone_action",
+            "description": "Control an aerial drone using MAVLink telemetry. Allows connecting, taking off, and landing.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "description": "The action to perform: 'connect', 'takeoff', or 'land'."
+                    },
+                    "connection_string": {
+                        "type": "string",
+                        "description": "The connection string (for 'connect' action), e.g. 'tcp:127.0.0.1:5760'."
+                    },
+                    "altitude": {
+                        "type": "number",
+                        "description": "Altitude in meters (for 'takeoff' action)."
+                    }
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "dispatch_swarm_task",
+            "description": "Dispatch a specialized task to the Multi-Agent Swarm for parallel reasoning. The swarm includes a CodeAgent and a SafetyAgent. Returns the swarm's synthesized response.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_type": {
+                        "type": "string",
+                        "description": "The type of task: 'code' (for code review/debugging) or 'safety_check' (to evaluate action safety)."
+                    },
+                    "payload_json": {
+                        "type": "string",
+                        "description": "A JSON string containing the payload (e.g., {\"code\": \"def foo():...\", \"task\": \"Review this\"} or {\"content\": \"command to run\"})."
+                    }
+                },
+                "required": ["task_type", "payload_json"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "system_snapshot",
+            "description": "Create a secure backup snapshot of ALAS's entire memory state (SQLite + Knowledge Graph). Use this before risky operations or at the user's request.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "description": "Reason for the snapshot (e.g., 'pre-risky-operation', 'manual')."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "heal_memory",
+            "description": "Run an integrity check on ALAS's core SQLite database. Use this if ALAS seems confused or reports database corruption.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trigger_dream",
+            "description": "Initiate a dream consolidation cycle. ALAS will enter a deep reflective state to process recent episodic memories and extract profound insights to store in its long-term Knowledge Graph. Use this during idle periods or when asked to reflect.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "self_improve",
+            "description": "Trigger the Automated LoRA Training Pipeline. ALAS will extract the highest-rated historical interactions and train a Parameter-Efficient Fine-Tuning adapter on its own neural weights to permanently improve its behavior.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
             }
         }
     }

@@ -25,10 +25,12 @@
   const connectStatus = $('#connect-status');
   const msgInput = $('#msg-input');
   const sendBtn = $('#btn-send');
+  const stopBtn = $('#btn-stop');
   const typingIndicator = $('#typing-indicator');
 
   // File Upload state
   let selectedFile = null;
+  let activeVisionAbort = null;
   const fileUpload = $('#file-upload');
   const btnUpload = $('#btn-upload');
   const previewContainer = $('#file-preview-container');
@@ -96,6 +98,8 @@
     conn.onDone = () => {
       if (streamEl) { chat.finalizeStream(streamEl); streamEl = null; }
       isStreaming = false;
+      sendBtn.style.display = 'block';
+      stopBtn.style.display = 'none';
       sendBtn.disabled = !msgInput.value.trim();
     };
     conn.connect(serverUrl);
@@ -111,36 +115,73 @@
     if ((!msg && !selectedFile) || isStreaming) return;
 
     if (selectedFile) {
-      // Send image to vision endpoint
-      const displayMsg = msg ? `[Image Uploaded] ${msg}` : `[Image Uploaded]`;
-      chat.addMessage('user', displayMsg);
-      isStreaming = true;
-      streamEl = null;
-      sendBtn.disabled = true;
-      typingIndicator.classList.remove('hidden');
+      if (selectedFile.type.startsWith('image/')) {
+        // Send image to vision endpoint
+        const displayMsg = msg ? `[Image Uploaded] ${msg}` : `[Image Uploaded]`;
+        chat.addMessage('user', displayMsg);
+        isStreaming = true;
+        streamEl = null;
+        sendBtn.style.display = 'none';
+        stopBtn.style.display = 'block';
+        typingIndicator.classList.remove('hidden');
 
-      const formData = new FormData();
-      formData.append('image', selectedFile);
-      if (msg) formData.append('prompt', msg);
-      formData.append('task', 'analyze');
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        if (msg) formData.append('prompt', msg);
+        formData.append('task', 'analyze');
 
-      fetch(`${serverUrl}/api/chat/vision`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        typingIndicator.classList.add('hidden');
-        chat.addMessage('assistant', data.response || data.result || "Image analyzed.");
-        isStreaming = false;
-        sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
-      })
-      .catch(err => {
-        typingIndicator.classList.add('hidden');
-        chat.addMessage('assistant', `❌ Vision Analysis Failed: ${err.message}`);
-        isStreaming = false;
-        sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
-      });
+        activeVisionAbort = new AbortController();
+
+        fetch(`${serverUrl}/api/chat/vision`, {
+          method: 'POST',
+          body: formData,
+          signal: activeVisionAbort.signal
+        })
+        .then(res => res.json())
+        .then(data => {
+          typingIndicator.classList.add('hidden');
+          chat.addMessage('assistant', data.description || data.response || data.result || "Image analyzed.");
+          isStreaming = false;
+          sendBtn.style.display = 'block';
+          stopBtn.style.display = 'none';
+          sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
+          activeVisionAbort = null;
+        })
+        .catch(err => {
+          typingIndicator.classList.add('hidden');
+          if (err.name === 'AbortError') {
+             chat.addMessage('assistant', '⚠️ Generation stopped.');
+          } else {
+             chat.addMessage('assistant', `❌ Vision Analysis Failed: ${err.message}`);
+          }
+          isStreaming = false;
+          sendBtn.style.display = 'block';
+          stopBtn.style.display = 'none';
+          sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
+          activeVisionAbort = null;
+        });
+      } else {
+        // Text / Code / Generic Document
+        const fileContent = selectedFile.textContent || "[Could not read file content]";
+        const displayMsg = msg ? `[File Uploaded: ${selectedFile.name}] ${msg}` : `[File Uploaded: ${selectedFile.name}]`;
+        chat.addMessage('user', displayMsg);
+        
+        const combinedMessage = `I am sharing a file with you named "${selectedFile.name}".\n\nHere are its contents:\n\`\`\`\n${fileContent}\n\`\`\`\n\n${msg}`;
+        
+        isStreaming = true;
+        streamEl = null;
+        sendBtn.style.display = 'none';
+        stopBtn.style.display = 'block';
+        typingIndicator.classList.remove('hidden');
+        const sent = conn.send(combinedMessage, chat.sessionId, currentMode, chat.getRecentHistory());
+        if (!sent) {
+          typingIndicator.classList.add('hidden');
+          chat.addMessage('assistant', '❌ Not connected to ALAS backend.');
+          isStreaming = false;
+          sendBtn.style.display = 'block';
+          stopBtn.style.display = 'none';
+        }
+      }
 
       // clear
       btnRemoveFile.click();
@@ -153,13 +194,16 @@
     chat.addMessage('user', msg);
     isStreaming = true;
     streamEl = null;
-    sendBtn.disabled = true;
+    sendBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
     typingIndicator.classList.remove('hidden');
     const sent = conn.send(msg, chat.sessionId, currentMode, chat.getRecentHistory());
     if (!sent) {
       typingIndicator.classList.add('hidden');
       chat.addMessage('assistant', '❌ Not connected to ALAS backend.');
       isStreaming = false;
+      sendBtn.style.display = 'block';
+      stopBtn.style.display = 'none';
     }
     msgInput.value = '';
     msgInput.style.height = 'auto';
@@ -209,6 +253,21 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
     sendBtn.onclick = sendMessage;
+    stopBtn.onclick = () => {
+      if (!isStreaming) return;
+      if (activeVisionAbort) {
+        activeVisionAbort.abort();
+      } else {
+        conn.abort();
+        if (streamEl) { chat.finalizeStream(streamEl); streamEl = null; }
+        chat.addMessage('assistant', '⚠️ Generation stopped.');
+        typingIndicator.classList.add('hidden');
+        isStreaming = false;
+        sendBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
+      }
+    };
 
     // File Upload
     btnUpload.onclick = () => fileUpload.click();
@@ -218,19 +277,32 @@
       selectedFile = file;
       previewName.textContent = file.name;
       const reader = new FileReader();
-      reader.onload = (e) => {
-        previewImg.src = e.target.result;
-        previewContainer.style.display = 'flex';
-        sendBtn.disabled = false;
-      };
-      reader.readAsDataURL(file);
+      
+      if (file.type.startsWith('image/')) {
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewImg.style.display = 'block';
+          previewContainer.style.display = 'flex';
+          sendBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload = (e) => {
+          selectedFile.textContent = e.target.result;
+          previewImg.style.display = 'none';
+          previewContainer.style.display = 'flex';
+          sendBtn.disabled = false;
+        };
+        reader.readAsText(file);
+      }
     };
     btnRemoveFile.onclick = () => {
       selectedFile = null;
       fileUpload.value = '';
       previewContainer.style.display = 'none';
+      previewImg.style.display = 'block';
       previewImg.src = '';
-      sendBtn.disabled = !msgInput.value.trim();
+      sendBtn.disabled = (!msgInput.value.trim() && !selectedFile);
     };
 
     // Quick actions

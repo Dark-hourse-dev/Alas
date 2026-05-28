@@ -6,7 +6,7 @@
 class ALASEvolution {
     constructor() {
         this.modal = document.getElementById('evolution-modal');
-        this.btnOpen = document.getElementById('btn-view-evolution');
+        this.btnOpen = document.getElementById('btn-nav-evolution');
         this.btnClose = document.getElementById('btn-close-evolution-modal');
         
         if (this.btnOpen && this.btnClose) {

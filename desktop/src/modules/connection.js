@@ -54,7 +54,21 @@ class ALASConnection {
 
   disconnect() {
     clearTimeout(this.reconnectTimer);
-    if (this.ws) this.ws.close();
+    if (this.ws) {
+        this.ws.onclose = null;
+        this.ws.close();
+    }
+  }
+
+  abort() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.onclose = null; // Prevent default reconnect delay
+      this.ws.close();
+      this.connected = false;
+      this._setStatus('offline');
+      // Reconnect immediately
+      setTimeout(() => this.connect(), 50);
+    }
   }
 
   _setStatus(status) {

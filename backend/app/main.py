@@ -44,7 +44,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Permission Tiers: 🟢 AUTO / 🟡 NOTIFY / 🔴 ASK")
     logger.info(f"   System Tools: shell, sysinfo, file manager")
     logger.info(f"   Phase 4 Tools: sandbox, git, research, planner, task queue")
-    logger.info("🧬 ALAS Phase 4 — Agentic Autonomy ready.")
+    logger.info(f"   Phase 6: Webcam Sensor (MediaPipe)")
+    logger.info(f"   Phase 10: Internal Monologue")
+    logger.info("🧬 ALAS Phase 10 — Meta-Intelligence ready.")
     
     # Start Scheduler
     scheduler = get_scheduler()
@@ -60,11 +62,23 @@ async def lifespan(app: FastAPI):
     task_queue = get_task_queue()
     await task_queue.start_worker()
     
+    # Start Webcam Sensor (Phase 6)
+    from backend.app.sensors.webcam import get_webcam_sensor
+    webcam_sensor = get_webcam_sensor()
+    webcam_sensor.start()
+
+    # Start Internal Monologue (Phase 10)
+    from backend.app.cognition.monologue import get_monologue
+    monologue = get_monologue()
+    monologue.start()
+    
     yield
     
     # Shutdown
     await task_queue.stop_worker()
     scheduler.shutdown()
+    webcam_sensor.stop()
+    monologue.stop()
     logger.info("🧬 ALAS shutting down.")
 
 
@@ -72,7 +86,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ALAS — Adaptive Living AI System",
     description="A persistent digital lifeform that learns, adapts, and evolves.",
-    version="0.5.0",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
@@ -146,8 +160,8 @@ async def system_status():
     active_tasks = tq.get_active_tasks()
     return {
         "system": "ALAS — Adaptive Living AI System",
-        "version": "0.5.0",
-        "phase": "Phase 4 — Agentic Autonomy",
+        "version": "1.0.0",
+        "phase": "Phase 10 — Meta-Intelligence (All Phases Complete)",
         "status": "online",
         "features": {
             "permission_tiers": True,
@@ -160,6 +174,14 @@ async def system_status():
             "task_planner": True,
             "background_tasks": True,
             "scheduled_jobs": True,
+            "webcam_sensor": True,
+            "physics_simulation": True,
+            "drone_control": True,
+            "swarm_intelligence": True,
+            "self_healing_memory": True,
+            "internal_monologue": True,
+            "dream_consolidation": True,
+            "self_improvement": True,
         },
         "actions_logged": len(actions),
         "active_background_tasks": len(active_tasks),

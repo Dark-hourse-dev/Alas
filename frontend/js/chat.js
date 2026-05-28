@@ -142,12 +142,13 @@ class ALASChat {
         textEl.innerHTML = this._formatMarkdown(data.response || 'No response received.');
         this.history.push({ role: 'assistant', content: data.response || '' });
 
-        // Add feedback buttons
+        // Add feedback and copy buttons
         const rawContent = data.response || '';
         const feedbackHtml = `
           <div class="message-feedback">
             <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'positive', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👍</button>
             <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'negative', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👎</button>
+            <button class="feedback-btn" style="margin-left:8px;" onclick="navigator.clipboard.writeText(\`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/\n/g, '\\n')}\`); this.textContent='Copied!'; setTimeout(()=>this.textContent='📋', 2000)" title="Copy Response">📋</button>
           </div>
         `;
         this._currentAssistant.querySelector('.message-time').insertAdjacentHTML('afterend', feedbackHtml);
@@ -191,11 +192,12 @@ class ALASChat {
           
           this.history.push({ role: 'assistant', content: rawContent });
 
-          // Add feedback buttons
+          // Add feedback and copy buttons
           const feedbackHtml = `
             <div class="message-feedback">
               <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'positive', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👍</button>
               <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'negative', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👎</button>
+              <button class="feedback-btn" style="margin-left:8px;" onclick="navigator.clipboard.writeText(\`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/\n/g, '\\n')}\`); this.textContent='Copied!'; setTimeout(()=>this.textContent='📋', 2000)" title="Copy Response">📋</button>
             </div>
           `;
           this._currentAssistant.querySelector('.message-time').insertAdjacentHTML('afterend', feedbackHtml);
@@ -283,7 +285,10 @@ class ALASChat {
     if (!text) return '';
     return text
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+          const escapedCode = code.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+          return `<div style="position:relative"><pre><code>${code}</code></pre><button onclick="navigator.clipboard.writeText('${escapedCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 2000)" style="position:absolute; top:4px; right:4px; background:rgba(255,255,255,0.1); color:var(--text-secondary); border:none; border-radius:4px; padding:2px 6px; font-size:0.7rem; cursor:pointer;">Copy</button></div>`;
+      })
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')

@@ -214,7 +214,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Mode Switching ---
   document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => modes.setMode(btn.dataset.mode));
+    if (btn.dataset.mode) {
+      btn.addEventListener('click', () => modes.setMode(btn.dataset.mode));
+    }
+  });
+
+  // --- Sidebar Navigation ---
+  const profModal = document.getElementById('profile-edit-modal');
+  const openSettings = async () => {
+    profModal.style.display = 'flex';
+    try {
+      const res = await fetch('/api/profile/default');
+      if (res.ok) {
+        const p = await res.json();
+        document.getElementById('profile-input-name').value = p.name || '';
+        document.getElementById('profile-input-preferred').value = p.preferred_name || '';
+        document.getElementById('profile-input-style').value = p.communication_style || 'balanced';
+        document.getElementById('profile-input-topics').value = (p.topics_of_interest || []).join(', ');
+      }
+    } catch (e) {}
+  };
+
+  const btnSettings = document.getElementById('btn-nav-settings');
+  const btnFeedback = document.getElementById('btn-nav-feedback');
+  const btnHelp = document.getElementById('btn-nav-help');
+
+  if (btnSettings) btnSettings.addEventListener('click', openSettings);
+  if (btnFeedback) btnFeedback.addEventListener('click', openSettings);
+  if (btnHelp) btnHelp.addEventListener('click', () => {
+      chat.addMessage('assistant', 'Here are some tips:\\n- **Settings**: Click the Settings button to configure your profile.\\n- **Modes**: Switch modes (Work, Casual, etc) to change how I respond.\\n- **Voice**: Click the microphone icon to speak to me!\\n- **Uploads**: Use the paperclip to upload code or text files for me to read.');
+      if (window.innerWidth <= 768) {
+          document.getElementById('sidebar').classList.remove('open');
+      }
   });
 
   // --- Sidebar Toggle ---
@@ -248,20 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Profile Modal ---
-  const profModal = document.getElementById('profile-edit-modal');
-  document.getElementById('btn-edit-profile').addEventListener('click', async () => {
-    profModal.style.display = 'flex';
-    try {
-      const res = await fetch('/api/profile/default');
-      if (res.ok) {
-        const p = await res.json();
-        document.getElementById('profile-input-name').value = p.name || '';
-        document.getElementById('profile-input-preferred').value = p.preferred_name || '';
-        document.getElementById('profile-input-style').value = p.communication_style || 'balanced';
-        document.getElementById('profile-input-topics').value = (p.topics_of_interest || []).join(', ');
-      }
-    } catch (e) {}
-  });
+  document.getElementById('btn-edit-profile').addEventListener('click', openSettings);
   document.getElementById('btn-close-profile-modal').addEventListener('click', () => {
     profModal.style.display = 'none';
   });

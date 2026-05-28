@@ -28,5 +28,15 @@
     "cron": null,
     "created": "2026-05-27T17:02:43.898197",
     "status": "cancelled"
+  },
+  "rec_339a45fa": {
+    "id": "rec_339a45fa",
+    "type": "recurring",
+    "name": "Knowledge Synthesis",
+    "callback": "sysmon_synthesis",
+    "interval_minutes": 1440,
+    "cron": null,
+    "created": "2026-05-27T18:56:03.196634",
+    "status": "active"
   }
 }
