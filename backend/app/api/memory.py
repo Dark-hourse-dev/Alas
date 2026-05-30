@@ -62,6 +62,14 @@ async def recent_memories(n: int = 20, session_id: Optional[str] = None):
     return {"memories": memories}
 
 
+@router.get("/sessions")
+async def get_sessions(limit: int = 50):
+    """Get a list of unique chat sessions and their latest activity."""
+    retriever = get_retriever()
+    sessions = retriever.episodic.get_sessions(limit=limit)
+    return {"sessions": sessions}
+
+
 @router.delete("/{memory_id}")
 async def delete_memory(memory_id: str):
     """Delete a specific memory entry."""

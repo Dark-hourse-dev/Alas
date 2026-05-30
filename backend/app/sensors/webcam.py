@@ -24,6 +24,9 @@ class WebcamSensor:
         self._thread = None
         self._lock = threading.Lock()
         
+        import queue
+        self.frame_queue = queue.Queue(maxsize=1)
+        
         # Latest tracked state
         self.state = {
             "user_present": False,
@@ -79,46 +82,69 @@ class WebcamSensor:
             "attention": attention
         }
 
+    def push_frame(self, image):
+        """Push a frame from WebRTC to the sensor's processing queue."""
+        import queue
+        try:
+            self.frame_queue.put_nowait(image)
+        except queue.Full:
+            try:
+                self.frame_queue.get_nowait()
+                self.frame_queue.put_nowait(image)
+            except queue.Empty:
+                pass
+
     def _capture_loop(self):
         """Background thread loop to continuously read and process frames."""
         try:
             import mediapipe as mp
-            mp_face_mesh = mp.solutions.face_mesh
-            face_mesh = mp_face_mesh.FaceMesh(
-                max_num_faces=1,
-                refine_landmarks=True,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5
+            from mediapipe.tasks.python import vision
+            from mediapipe.tasks.python import BaseOptions
+            import os
+            
+            model_path = os.path.join(os.getcwd(), 'backend', 'data', 'face_landmarker.task')
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model not found at {model_path}")
+                
+            base_options = BaseOptions(model_asset_path=model_path)
+            options = vision.FaceLandmarkerOptions(
+                base_options=base_options,
+                num_faces=1
             )
-        except (ImportError, AttributeError) as e:
+            detector = vision.FaceLandmarker.create_from_options(options)
+        except Exception as e:
             with self._lock:
                 self.state["error"] = f"MediaPipe load error: {e}"
             logger.error(f"MediaPipe error: {e}. Webcam sensor disabled.")
             return
 
-        # Attempt to open default camera
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            self.state["error"] = "No webcam detected"
-            logger.error("No webcam detected.")
-            return
-
-        logger.info("🎥 Webcam sensor started successfully.")
+        logger.info("🎥 Webcam sensor started (Waiting for WebRTC frames).")
         
         while self.is_running:
-            success, image = cap.read()
-            if not success:
-                time.sleep(1)
+            import queue
+            try:
+                image = self.frame_queue.get(timeout=1.0)
+            except queue.Empty:
+                with self._lock:
+                    self.state = {
+                        "user_present": False,
+                        "attention": "absent",
+                        "emotion": "none",
+                        "last_updated": time.time(),
+                        "error": None
+                    }
                 continue
 
-            # Convert to RGB for mediapipe
+            # Convert to RGB and wrap in mp.Image
             image.flags.writeable = False
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = face_mesh.process(image_rgb)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
+            
+            results = detector.detect(mp_image)
             
             # Update state
-            if results.multi_face_landmarks:
-                landmarks = results.multi_face_landmarks[0].landmark
+            if results.face_landmarks:
+                landmarks = results.face_landmarks[0]
                 analysis = self._analyze_face(landmarks, image.shape)
                 
                 with self._lock:
@@ -142,8 +168,7 @@ class WebcamSensor:
             # Sleep to save CPU (process at ~5 FPS)
             time.sleep(0.2)
             
-        cap.release()
-        face_mesh.close()
+        detector.close()
         logger.info("🎥 Webcam sensor stopped.")
 
     def start(self):

@@ -169,6 +169,52 @@ class EpisodicMemory:
             "collection_name": "episodic_memory",
         }
 
+    def get_sessions(self, limit: int = 50) -> list[dict]:
+        """
+        Get a list of recent unique chat sessions.
+        Returns a list of dicts with session_id, timestamp, and a snippet of the first message.
+        """
+        # Fetch the most recent 1000 messages to extract recent sessions
+        results = self._collection.get(
+            limit=1000,
+            include=["documents", "metadatas"],
+        )
+        
+        if not results or not results["documents"]:
+            return []
+            
+        sessions = {}
+        for i, doc in enumerate(results["documents"]):
+            meta = results["metadatas"][i]
+            session_id = meta.get("session_id", "default")
+            timestamp = meta.get("timestamp", "")
+            role = meta.get("role", "unknown")
+            
+            # We want the earliest message of each session to act as the title
+            if session_id not in sessions:
+                sessions[session_id] = {
+                    "session_id": session_id,
+                    "timestamp": timestamp, # Will track the earliest timestamp
+                    "latest_timestamp": timestamp, # Will track the most recent activity
+                    "title": doc[:40] + "..." if len(doc) > 40 else doc,
+                    "role": role
+                }
+            else:
+                # If this message is earlier, use it as the title
+                if timestamp < sessions[session_id]["timestamp"]:
+                    sessions[session_id]["timestamp"] = timestamp
+                    # Only use user messages for titles if possible
+                    if role == "user" or sessions[session_id]["role"] != "user":
+                        sessions[session_id]["title"] = doc[:40] + "..." if len(doc) > 40 else doc
+                        sessions[session_id]["role"] = role
+                # Track latest activity for sorting
+                if timestamp > sessions[session_id]["latest_timestamp"]:
+                    sessions[session_id]["latest_timestamp"] = timestamp
+                    
+        # Sort sessions by latest activity, descending
+        sorted_sessions = sorted(sessions.values(), key=lambda x: x["latest_timestamp"], reverse=True)
+        return sorted_sessions[:limit]
+
     def delete(self, memory_id: str):
         """Delete a specific memory entry."""
         self._collection.delete(ids=[memory_id])

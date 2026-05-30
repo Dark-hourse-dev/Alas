@@ -1,47 +1,42 @@
-# 🧬 ALAS — Adaptive Living AI System
+# 🧬 ALAS 2.0 — Adaptive Living AI System
 
 > A persistent digital lifeform that learns, adapts, and evolves through continuous experience.
 
-[![Phase](https://img.shields.io/badge/Phase-4%20Agentic%20Autonomy-blueviolet)]()
-[![Version](https://img.shields.io/badge/Version-0.5.0-cyan)]()
+[![Phase](https://img.shields.io/badge/Phase-14%20Mesh%20Network-blueviolet)]()
+[![Version](https://img.shields.io/badge/Version-2.0.0-cyan)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
 
 ---
 
-## ✨ Features
+## ✨ Features (ALAS 2.0)
 
-### Core (Phase 1) ✅
+### 🚀 ALAS 2.0 Paradigm Shift ✅
+- 🧠 **Local Superintelligence** — 100% local Tree-of-Thoughts (ToT) reasoning engine. No cloud API keys required.
+- 👁️ **Zero-Latency Perception** — Peer-to-Peer WebRTC pipeline streaming 15fps webcam & 16kHz audio directly into MediaPipe Face Mesh & VAD.
+- 🕸️ **Cross-Device Mesh (Rust)** — High-performance Rust daemon for P2P Tailscale memory synchronization across all your devices.
+
+### Core (Phase 1-4) ✅
 - 🧠 **Persistent Memory** — ChromaDB episodic memory with semantic RAG retrieval
-- 🤖 **Local LLM** — Ollama-powered streaming inference (llama3.2:3b)
+- 🤖 **Agentic Autonomy** — ReAct tool execution (time, weather, code execution, web search)
 - 🎙️ **Voice I/O** — Speech-to-text (Whisper) + Text-to-speech (Edge-TTS)
-- 🎨 **Adaptive Modes** — Work, Casual, Creative, Learning, Calm
-- 🛡️ **Safety Filter** — Constitutional constraint checking + PII detection
-- 👤 **User Profile** — Persistent identity and preferences (SQLite)
-
-### Cognitive Architecture (Phase 2) ✅
 - 🕸️ **Knowledge Graph** — NetworkX-powered entity/relationship memory (L2)
-- 🔮 **Vision Engine** — Multimodal image understanding (LLaVA/Moondream)
-- 🧩 **Memory Consolidation** — Bio-inspired hippocampal replay
-- 🔧 **Agentic Tools** — ReAct tool execution (time, weather, calculate, files)
-- 📊 **Knowledge Graph UI** — Interactive canvas visualization
-- 🔄 **Cross-Device Sync** — State export/import API
-
-### Adaptive Learning (Phase 3) ✅
 - 🧬 **Behavioral Evolution** — Genetic algorithm mutating personality parameters
-- 🪞 **Self-Reflection** — LLM-powered session analysis updating user profile
-- 📈 **Implicit Feedback** — Automatic fitness scoring from conversation metrics
-- 🔌 **LoRA Adapters** — Dynamic adapter registry (coding, creative, finance)
-- 📱 **PWA Support** — Installable as native app on any device
-- 🐳 **Docker Deployment** — One-command cloud deployment
+- 🐍 **Code Sandbox & Git** — Execute Python/Bash safely and manage repositories
 
-### Agentic Autonomy (Phase 4) ✅
-- 🐍 **Code Sandbox** — Execute Python/Bash safely with memory and time limits
-- 🔀 **Git Agent** — Full repository management (commit, branch, status, stash)
-- 🔬 **Research Agent** — Autonomous web search, reading, and report synthesis
-- 🗺️ **Task Planner** — Multi-step LLM plan generation with rollback capabilities
-- 📋 **Background Queue** — Async task execution with progress tracking
-- 📅 **Scheduled Jobs** — Cron and interval-based recurring automations
-- 💻 **Desktop App** — Cross-platform Electron app with bio-inspired UI and context isolation
+### Advanced Cognition & Safety (Phase 5-6) ✅
+- 🔮 **Vision Engine** — Multimodal image understanding & MediaPipe webcam integration
+- 🏰 **Fortress System** — Immutable action audit trails & AES-256 memory encryption
+- 🛡️ **Dynamic Permissions** — Tiered execution permissions (AUTO, NOTIFY, ASK)
+
+### Embodiment & Swarm (Phase 7-9) ✅
+- 🚁 **Embodied Intelligence** — PyBullet physics simulation and MAVLink drone control
+- 🐝 **Swarm Intelligence** — Multi-agent orchestrator with a Pub/Sub Blackboard
+- 👥 **Sub-Agents** — Specialized `CodeAgent` and `SafetyAgent` working in parallel
+
+### Meta-Intelligence (Phase 10) ✅
+- 💭 **Internal Monologue** — Background thread simulating continuous conscious thought
+- 🌙 **Dream Consolidation** — Nightly synthesis of episodic memory into Knowledge Graph insights
+- 🚀 **Automated Self-Improvement** — LoRA extraction and dynamic PEFT adapter training
 
 ---
 
@@ -70,8 +65,12 @@ cp .env.example .env
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
 
-# 6. Start the server
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+# 6. (Optional) Build the Rust Mesh Daemon for P2P memory sync
+# Requires Rust to be installed (https://rustup.rs/)
+cd mesh_daemon && cargo build && cd ..
+
+# 7. Start the server (Backend, Mesh, and Desktop App)
+./start_alas.sh
 
 # 7. Open http://localhost:8000
 ```
@@ -91,9 +90,9 @@ ngrok http 8000
 # Open the URL on your phone → "Add to Home Screen" → ALAS is an app!
 ```
 
-### Desktop App (Linux/Mac/Win)
+### Desktop App & Daemons (Linux/Mac/Win)
 ```bash
-# 1. Start the ALAS backend
+# 1. Start everything (Backend, Desktop App, and Rust Mesh Daemon)
 ./start_alas.sh
 
 # 2. To build standalone executables
@@ -136,8 +135,13 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for cloud deployment options (Railway, R
 │  │   ├── Implicit Feedback Tracker                     │
 │  │   └── LoRA Adapter Manager                          │
 │  ├── Safety Filter (constitutional constraints)        │
-│  ├── Emotion Detector (7 categories)                   │
-│  └── Voice (Whisper STT + Edge-TTS)                    │
+│  ├── Emotion & Attention (WebRTC + MediaPipe)          │
+│  └── Voice (WebRTC VAD + Whisper + Edge-TTS)           │
+└──────────────────┬─────────────────────────────────────┘
+                   │
+┌──────────────────▼─────────────────────────────────────┐
+│  Mesh Daemon (Rust)                                    │
+│  └── P2P Memory Sync over Tailscale / Local Area       │
 └──────────────────┬─────────────────────────────────────┘
                    │
 ┌──────────────────▼─────────────────────────────────────┐
@@ -225,12 +229,20 @@ adaptive-living-ai/
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Roadmap (ALAS 2.0 Blueprint)
 
-See [FUTURE_FEATURES.md](docs/FUTURE_FEATURES.md) for the full 155-feature roadmap including:
-- **Phase 5** — Cognitive Superpowers (causal reasoning, knowledge mastery)
-- **Phase 6–10** — Sensory mastery, robotics, swarm intelligence, meta-learning
+With the successful completion of **Phase 10**, ALAS has reached version 1.0.0.
+The next frontier is **ALAS 2.0**, focusing on decentralized mesh networking and spatial computing.
+
+### Upcoming Milestones (ALAS 2.0):
+- **Phase 11** — Universal Tool Plug via **Model Context Protocol (MCP)** integration.
+- **Phase 12** — Dynamic "Mixture of Compute" Router (combining local privacy with cloud supercomputer logic).
+- **Phase 13** — Zero-Latency Perception via direct WebRTC multimodal streams.
+- **Phase 14** — Decentralized P2P Mesh Network (Rust daemon for cross-device sync).
+- **Phase 15** — Embodied Spatial Computing (AR Wearable HUD integration).
+
+See the full [ALAS 2.0 Blueprint](ALAS_2.0_Blueprint.md) for architectural details.
 
 ---
 
-*ALAS v0.5.0 — Phase 4: Agentic Autonomy | May 2026*
+*ALAS v1.0.0 — Phase 10: Meta-Intelligence | May 2026*

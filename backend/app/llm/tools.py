@@ -288,22 +288,35 @@ def execute_get_user_state() -> str:
     from backend.app.sensors.webcam import get_webcam_sensor
     import time
     
-    sensor = get_webcam_sensor()
-    state = sensor.get_state()
+    from backend.app.sensors.mic import get_mic_sensor
     
-    if state.get("error"):
-        return f"Webcam sensor error: {state['error']}"
+    webcam_sensor = get_webcam_sensor()
+    mic_sensor = get_mic_sensor()
+    
+    webcam_state = webcam_sensor.get_state()
+    mic_state = mic_sensor.get_state()
+    
+    if webcam_state.get("error"):
+        return f"Webcam sensor error: {webcam_state['error']}"
         
-    if not state.get("user_present"):
-        return "User is not currently visible to the webcam."
+    if not webcam_state.get("user_present"):
+        presence = "User is not currently visible to the webcam."
+    else:
+        presence = (
+            f"**User Presence**: Detected\n"
+            f"**Attention**: {webcam_state.get('attention', 'unknown').capitalize()}\n"
+            f"**Emotion**: {webcam_state.get('emotion', 'neutral').capitalize()}"
+        )
         
-    age = time.time() - state.get("last_updated", 0)
+    age = time.time() - webcam_state.get("last_updated", 0)
+    
+    speaking = "Yes" if mic_state.get("is_speaking") else "No"
+    vol = mic_state.get("volume", 0.0)
     
     return (
-        f"**User Presence**: Detected\n"
-        f"**Attention**: {state.get('attention', 'unknown').capitalize()}\n"
-        f"**Emotion**: {state.get('emotion', 'neutral').capitalize()}\n"
-        f"*(Data is {age:.1f} seconds old)*"
+        f"{presence}\n"
+        f"**Currently Speaking**: {speaking} (Volume: {vol:.3f})\n"
+        f"*(Visual data is {age:.1f} seconds old)*"
     )
 
 
@@ -1649,8 +1662,10 @@ AVAILABLE_TOOLS = [
 ]
 
 def get_all_tools():
-    """Get all available tools, including built-in and plugin tools."""
+    """Get all available tools, including built-in, plugin, and MCP tools."""
     from backend.app.plugins.base import get_plugin_manager
+    from backend.app.mcp.mcp_manager import get_mcp_manager
+    
     tools = AVAILABLE_TOOLS.copy()
     
     # Inject plugin tools
@@ -1660,9 +1675,16 @@ def get_all_tools():
     except Exception as e:
         logger.error(f"Failed to load plugin tools: {e}")
         
+    # Inject MCP tools
+    try:
+        mcp_tools = get_mcp_manager().get_all_tool_schemas()
+        tools.extend(mcp_tools)
+    except Exception as e:
+        logger.error(f"Failed to load MCP tools: {e}")
+        
     return tools
 
-def execute_tool(tool_call) -> Dict[str, Any]:
+async def execute_tool(tool_call) -> Dict[str, Any]:
     """
     Execute a tool requested by the LLM and return the result formatted for Ollama.
     """
@@ -1691,11 +1713,23 @@ def execute_tool(tool_call) -> Dict[str, Any]:
         else:
             # Check plugins
             from backend.app.plugins.base import get_plugin_manager
+            from backend.app.mcp.mcp_manager import get_mcp_manager
             try:
                 result_content = get_plugin_manager().execute_tool(name, args)
             except ValueError:
-                result_content = f"Error: Unknown tool '{name}'."
-                logger.warning(f"Unknown tool requested: {name}")
+                # If not a plugin, check MCP servers
+                try:
+                    mcp_manager = get_mcp_manager()
+                    mcp_schemas = mcp_manager.get_all_tool_schemas()
+                    if any(t["function"]["name"] == name for t in mcp_schemas):
+                        mcp_result = await mcp_manager.call_tool(name, args)
+                        result_content = mcp_result.get("content", "Error executing MCP tool.")
+                    else:
+                        result_content = f"Error: Unknown tool '{name}'."
+                        logger.warning(f"Unknown tool requested: {name}")
+                except Exception as mcp_err:
+                    result_content = f"Error executing MCP tool '{name}': {mcp_err}"
+                    logger.error(result_content)
                 
         # Ensure result is a string
         if not isinstance(result_content, str):

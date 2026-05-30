@@ -326,6 +326,41 @@ class ALASChat {
     if (welcome) { welcome.style.display = 'flex'; container.appendChild(welcome); }
     document.getElementById('header-session').textContent = `Session: ${this.sessionId.slice(0, 8)}`;
     document.getElementById('stat-session').textContent = '0';
+    if (window.loadChatHistory) window.loadChatHistory();
+  }
+
+  async loadHistory(sessionId) {
+    this.sessionId = sessionId;
+    this.history = [];
+    document.getElementById('header-session').textContent = `Session: ${this.sessionId.slice(0, 8)}`;
+    const container = document.getElementById('messages');
+    container.innerHTML = ''; 
+    const welcome = document.getElementById('welcome-message');
+    if (welcome) welcome.style.display = 'none';
+
+    try {
+      const res = await fetch(`/api/memory/recent?n=200&session_id=${sessionId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      if (!data.memories || data.memories.length === 0) {
+        container.innerHTML = '<div style="text-align:center; margin-top:20px; color:var(--text-muted);">No history found for this session.</div>';
+        return;
+      }
+      
+      // Memories are returned sorted descending (newest first). 
+      // We want to render them in chronological order (oldest first).
+      const chronological = data.memories.reverse();
+      
+      chronological.forEach(mem => {
+        const role = mem.metadata.role || 'user';
+        this._addMessage(role, mem.content, false);
+      });
+      this._scrollToBottom();
+    } catch (e) {
+      console.error('Error loading history:', e);
+      this._showError('Failed to load chat history.');
+    }
   }
 
   async submitFeedback(btnEl, type, content) {

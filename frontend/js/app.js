@@ -341,4 +341,58 @@ document.addEventListener('DOMContentLoaded', () => {
   memory.fetchStats();
   knowledge.updateStats();
   document.getElementById('header-session').textContent = `Session: ${chat.sessionId.slice(0, 8)}`;
+  
+  // Load sidebar chat history
+  async function loadChatHistory() {
+    try {
+      const res = await fetch('/api/memory/sessions');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const historyList = document.getElementById('chat-history-list');
+      if (!historyList) return;
+      
+      historyList.innerHTML = '';
+      if (!data.sessions || data.sessions.length === 0) {
+        historyList.innerHTML = '<span style="color: var(--text-muted); font-size: 12px; padding: 8px;">No past chats found.</span>';
+        return;
+      }
+      
+      data.sessions.forEach(session => {
+        const btn = document.createElement('button');
+        btn.className = 'mode-btn';
+        btn.title = new Date(session.latest_timestamp).toLocaleString();
+        btn.style.width = '100%';
+        btn.style.justifyContent = 'flex-start';
+        
+        const icon = document.createElement('span');
+        icon.className = 'mode-icon';
+        icon.textContent = '💬';
+        
+        const label = document.createElement('span');
+        label.className = 'mode-label';
+        label.textContent = session.title;
+        label.style.whiteSpace = 'nowrap';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        
+        btn.appendChild(icon);
+        btn.appendChild(label);
+        
+        btn.addEventListener('click', () => {
+          chat.loadHistory(session.session_id);
+          // Highlight active
+          Array.from(historyList.children).forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        
+        historyList.appendChild(btn);
+      });
+    } catch (e) {
+      console.error('Failed to load chat history', e);
+    }
+  }
+  
+  loadChatHistory();
+  window.loadChatHistory = loadChatHistory; // expose globally to update it on new session
 });

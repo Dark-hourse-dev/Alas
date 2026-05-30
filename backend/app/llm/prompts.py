@@ -132,21 +132,45 @@ def build_system_prompt(mode: str = "casual", user_context: str = "") -> str:
     # Phase 6: Live Sensory Context
     try:
         from backend.app.sensors.webcam import get_webcam_sensor
+        from backend.app.sensors.mic import get_mic_sensor
         import time
-        sensor = get_webcam_sensor()
-        state = sensor.get_state()
-        if state and state.get("user_present"):
-            age = time.time() - state.get("last_updated", 0)
-            parts.extend([
-                "",
-                "=== Live Sensory Feed (Phase 6) ===",
+        
+        webcam = get_webcam_sensor()
+        mic = get_mic_sensor()
+        
+        webcam_state = webcam.get_state()
+        mic_state = mic.get_state()
+        
+        has_context = False
+        sensor_lines = [
+            "",
+            "=== Live Sensory Feed (Phase 6) ==="
+        ]
+        
+        if webcam_state and webcam_state.get("user_present"):
+            has_context = True
+            age = time.time() - webcam_state.get("last_updated", 0)
+            sensor_lines.extend([
                 f"User is currently VISIBLE in the webcam.",
-                f"Attention: {state.get('attention', 'unknown').capitalize()}",
-                f"Facial Emotion: {state.get('emotion', 'neutral').capitalize()}",
-                f"(Feed lag: {age:.1f}s)",
-                "Use this context to dynamically adapt your tone (e.g. be brief if they look distracted, comforting if they look stressed).",
-                "=== End Sensory Feed ===",
+                f"Attention: {webcam_state.get('attention', 'unknown').capitalize()}",
+                f"Facial Emotion: {webcam_state.get('emotion', 'neutral').capitalize()}",
+                f"(Camera Feed lag: {age:.1f}s)",
             ])
+            
+        if mic_state and mic_state.get("is_speaking"):
+            has_context = True
+            sensor_lines.extend([
+                f"VOICE ACTIVITY DETECTED: The user is currently speaking.",
+                f"Volume/Energy: {mic_state.get('volume', 0.0):.3f}"
+            ])
+            
+        if has_context:
+            sensor_lines.extend([
+                "Use this context to dynamically adapt your tone (e.g. be brief if they look distracted, comforting if they look stressed, and acknowledge if they are speaking).",
+                "=== End Sensory Feed ==="
+            ])
+            parts.extend(sensor_lines)
+            
     except Exception as e:
         pass
 

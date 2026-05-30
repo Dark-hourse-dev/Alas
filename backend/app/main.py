@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from backend.app.config import get_settings, ensure_data_dirs
-from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks, schedules
+from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks, schedules, webrtc
 from backend.app.proactive.scheduler import get_scheduler
 from backend.app.proactive.monitors import register_monitors
 
@@ -72,9 +72,20 @@ async def lifespan(app: FastAPI):
     monologue = get_monologue()
     monologue.start()
     
+    # Start MCP Manager (ALAS 2.0 Phase 1)
+    from backend.app.mcp.mcp_manager import get_mcp_manager
+    mcp_manager = get_mcp_manager()
+    logger.info("   ALAS 2.0: Starting Universal Tool Plug (MCP)...")
+    db_path = "/tmp/alas_mcp.db" # Stored in /tmp to prevent uvicorn --reload loops
+    import asyncio
+    
+    # We use a python-based SQLite MCP server if available. If it fails, MCP gracefully skips it.
+    asyncio.create_task(mcp_manager.connect_stdio_server("sqlite_mcp", "python3", ["-m", "mcp_server_sqlite", "--db-path", db_path]))
+    
     yield
     
     # Shutdown
+    await mcp_manager.shutdown()
     await task_queue.stop_worker()
     scheduler.shutdown()
     webcam_sensor.stop()
@@ -111,6 +122,7 @@ app.include_router(learning.router)
 app.include_router(permissions.router)
 app.include_router(tasks.router)
 app.include_router(schedules.router)
+app.include_router(webrtc.router)
 
 
 # --- Static Files (Frontend) ---

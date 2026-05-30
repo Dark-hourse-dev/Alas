@@ -80,11 +80,8 @@ function createWindow() {
     height,
     minWidth: 380,
     minHeight: 520,
-    frame: false,
-    transparent: false,
+    frame: true,
     backgroundColor: '#0a0a1a',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: false,
     resizable: true,
     icon: path.join(__dirname, 'src', 'assets', 'icon.png'),
     show: false,
@@ -98,7 +95,11 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  // Load the modern ALAS Web App (Phase 10+)
+  mainWindow.loadURL(config.serverUrl).catch(err => {
+    console.error("Failed to load ALAS backend URL. Falling back to local UI.", err);
+    mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  });
 
   mainWindow.once('ready-to-show', () => {
     if (!config.startMinimized) {

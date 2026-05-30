@@ -7,6 +7,9 @@ Wraps Ollama for local LLM inference with support for:
 - Mode-aware personality switching
 """
 
+import json
+import logging
+import asyncio
 from typing import AsyncGenerator, Optional
 
 import ollama
@@ -171,8 +174,24 @@ class LLMEngine:
             user_id=user_id,
         )
 
-        # ReAct Loop for Tool Execution
-        from backend.app.llm.tools import AVAILABLE_TOOLS, execute_tool
+        # -------------------------------------------------------------
+        # ALAS 2.0 Local Superintelligence (Tree-of-Thoughts)
+        # -------------------------------------------------------------
+        msg_lower = message.lower()
+        if "[think]" in msg_lower or "refactor" in msg_lower or "complex" in msg_lower:
+            yield "\n\n_🧠 [Local Superintelligence] Deep Reasoning Activated. ALAS is brainstorming approaches..._\n\n"
+            from backend.app.cognition.reasoning import TreeOfThoughts
+            tot = TreeOfThoughts(self._client, self._model)
+            
+            best_plan = await tot.run_reasoning_loop(message)
+            
+            # Inject the optimized plan into the system prompt for execution
+            messages[0]["content"] += f"\n\n[DEEP REASONING PLAN]:\nThe following is an optimized execution plan you generated via Tree-of-Thoughts. Follow this plan to solve the user's task:\n{best_plan}"
+            
+            yield f"_🧠 [Local Superintelligence] Plan synthesized. Executing..._\n\n"
+            
+        # Local ReAct Loop for Tool Execution (Ollama)
+        from backend.app.llm.tools import get_all_tools, execute_tool
 
         full_response = []
         max_iterations = 3
@@ -180,52 +199,53 @@ class LLMEngine:
         
         while iteration < max_iterations:
             iteration += 1
-            iteration_response = []
             
-            stream = await self._client.chat(
+            # Use stream=False for reliable tool calling in Ollama
+            response = await self._client.chat(
                 model=self._model,
                 messages=messages,
-                stream=True,
-                tools=AVAILABLE_TOOLS,
+                stream=False,
+                tools=get_all_tools(),
             )
 
-            tool_calls = []
-            async for chunk in stream:
-                if hasattr(chunk.message, 'tool_calls') and chunk.message.tool_calls:
-                    tool_calls.extend(chunk.message.tool_calls)
-                
-                token = chunk.message.content
-                if token:
-                    iteration_response.append(token)
-                    full_response.append(token)
-                    yield token
-
-            if tool_calls:
+            msg = response.message
+            
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
                 # Add assistant message containing the tool calls
                 ast_msg = {
                     "role": "assistant",
-                    "content": "".join(iteration_response),
+                    "content": msg.content or "",
                     "tool_calls": [
                         {
                             "function": {
                                 "name": tc.function.name,
                                 "arguments": tc.function.arguments
                             }
-                        } for tc in tool_calls
+                        } for tc in msg.tool_calls
                     ]
                 }
                 messages.append(ast_msg)
                 
                 # Execute tools
-                for tc in tool_calls:
+                for tc in msg.tool_calls:
                     yield f"\n\n_⚙️ Using tool: `{tc.function.name}`..._\n\n"
-                    res = execute_tool(tc)
+                    res = await execute_tool(tc)
                     messages.append(res)
                 
-                # Continue loop to generate final answer
+                # Continue loop to allow model to read tool results
                 continue
             else:
-                # No tool calls, generation is complete
+                # No tool calls, generation is complete. Simulate streaming.
+                final_text = msg.content or ""
+                
+                # Simulate streaming by yielding chunks
+                chunk_size = 4
+                for i in range(0, len(final_text), chunk_size):
+                    chunk = final_text[i:i+chunk_size]
+                    full_response.append(chunk)
+                    yield chunk
+                    await asyncio.sleep(0.01) # Slight delay for smooth UI streaming
+                    
                 break
 
         # Store complete assistant response

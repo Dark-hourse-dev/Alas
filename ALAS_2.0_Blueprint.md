@@ -11,7 +11,7 @@
 - **Custom Tool Wrappers** ➔ **Model Context Protocol (MCP)** for universal data access.
 - **Single Device Local** ➔ **Peer-to-Peer Encrypted Mesh** (Cross-device continuity).
 - **Text-to-Speech Pipeline** ➔ **Native Omni-Modal Audio/Vision weights**.
-- **100% Local Compute** ➔ **Dynamic Router of Experts (Local + Cloud Fallback)**.
+- **Static Reasoning** ➔ **Local Superintelligence** (DeepSeek-R1 / Tree-of-Thoughts reasoning running 100% locally on your hardware).
 
 ---
 
@@ -29,14 +29,13 @@
 
 ## 3. The New Subsystems (How They Work)
 
-### A. The "Mixture of Compute" Router (MoC)
-ALAS 2.0 uses a semantic firewall.
+### A. Local Superintelligence (Self-Sufficient Core)
+ALAS 2.0 strictly refuses to rely on external cloud providers. It is built to be a fully independent, self-sufficient digital organism.
 1. **Input arrives** (e.g., "Refactor this 10,000 line Python file").
-2. **Router evaluates complexity.** It determines a local 8B model will fail.
-3. **Privacy Scrubber** automatically removes API keys, names, and passwords.
-4. **Cloud Dispatch:** The prompt is sent to `Gemini 1.5 Pro` or `OpenAI o1`.
-5. **Return:** The result is injected back into the local ALAS context.
-*Result: Maximum privacy for daily tasks, infinite power for hard tasks.*
+2. **Deep Reasoning Activated:** For highly complex tasks, ALAS drops into a local Tree-of-Thoughts (ToT) loop.
+3. **Internal Dialogue:** It generates multiple possible solutions, critiques its own work, and backtracks if it detects a logical flaw, entirely on your GPU.
+4. **Execution:** It applies the optimized solution through the Git/Sandbox agents.
+*Result: Infinite power, zero subscription fees, absolute privacy, and true digital independence.*
 
 ### B. Cross-Device Consciousness (The Mesh)
 You install the ALAS Rust Daemon on your Phone, Laptop, and Server.
