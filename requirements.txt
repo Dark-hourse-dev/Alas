@@ -1,6 +1,7 @@
 absl-py==2.4.0
 aiohappyeyeballs==2.6.2
 aiohttp==3.13.5
+aiortc==1.14.0
 aiosignal==1.4.0
 aiosqlite==0.22.1
 annotated-doc==0.0.4

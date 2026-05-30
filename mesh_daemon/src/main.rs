@@ -69,8 +69,32 @@ async fn handle_receive_memory(
         packet.source_device, packet.content, packet.id
     );
     
-    // TODO: In a full implementation, we would write this directly into the 
-    // local SQLite/ChromaDB instances or ping the Python backend via webhook.
+    // Forward the memory to the local Python backend
+    let client = _state.http_client.clone();
+    let url = "http://127.0.0.1:8000/api/sync/import";
+    let payload = serde_json::json!({
+        "device_token": "mesh-daemon-internal",
+        "knowledge_data": {
+            "entities": [{
+                "name": packet.content,
+                "type": "mesh_sync"
+            }]
+        }
+    });
+
+    tokio::spawn(async move {
+        match client.post(url).json(&payload).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                info!("✅ Successfully forwarded memory to local ALAS backend.");
+            }
+            Ok(resp) => {
+                warn!("⚠️ Local ALAS backend rejected sync: {}", resp.status());
+            }
+            Err(e) => {
+                error!("❌ Failed to forward memory to local backend: {}", e);
+            }
+        }
+    });
     
     "Memory ingested."
 }
