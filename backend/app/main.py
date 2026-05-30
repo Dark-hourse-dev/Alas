@@ -82,6 +82,13 @@ async def lifespan(app: FastAPI):
     # We use a python-based SQLite MCP server if available. If it fails, MCP gracefully skips it.
     asyncio.create_task(mcp_manager.connect_stdio_server("sqlite_mcp", "python3", ["-m", "mcp_server_sqlite", "--db-path", db_path]))
     
+    # Filesystem MCP server (Node.js via npx)
+    workspace_dir = str(Path(__file__).resolve().parent.parent.parent.parent)
+    asyncio.create_task(mcp_manager.connect_stdio_server("filesystem_mcp", "npx", ["-y", "@modelcontextprotocol/server-filesystem", workspace_dir]))
+    
+    # GitHub MCP server (Node.js via npx)
+    asyncio.create_task(mcp_manager.connect_stdio_server("github_mcp", "npx", ["-y", "@modelcontextprotocol/server-github"]))
+    
     yield
     
     # Shutdown

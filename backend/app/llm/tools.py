@@ -762,9 +762,6 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "get_current_time": get_current_time,
     "get_weather": get_weather,
     "calculate": calculate,
-    "read_local_file": read_local_file,
-    "write_local_file": write_local_file,
-    "list_directory": list_directory,
     "execute_shell": execute_shell,
     "get_system_info": get_system_info,
     "get_user_state": execute_get_user_state,
@@ -774,11 +771,9 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "send_notification": execute_send_notification,
     "browser_action": execute_browser_action,
     "process_document": process_document,
-    "query_database": query_database,
     "get_home_status": get_home_status,
     "control_home_device": control_home_device,
     "publish_mqtt_message": publish_mqtt_message,
-    "manage_files": manage_files,
     "search_web": search_web,
     "read_webpage": read_webpage,
     "set_reminder": execute_reminder,
@@ -786,7 +781,6 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "search_skills": execute_search_skills,
     # Phase 4 — Agentic Autonomy
     "run_code": execute_run_code,
-    "git_operation": execute_git_operation,
     "research_topic": execute_research_topic,
     "create_plan": execute_create_plan,
     "submit_background_task": execute_submit_background_task,
@@ -1666,7 +1660,8 @@ def get_all_tools():
     from backend.app.plugins.base import get_plugin_manager
     from backend.app.mcp.mcp_manager import get_mcp_manager
     
-    tools = AVAILABLE_TOOLS.copy()
+    legacy_tools = {"read_local_file", "write_local_file", "list_directory", "query_database", "manage_files", "git_operation"}
+    tools = [t for t in AVAILABLE_TOOLS if t["function"]["name"] not in legacy_tools]
     
     # Inject plugin tools
     try:
