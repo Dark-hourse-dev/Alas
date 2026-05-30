@@ -88,13 +88,29 @@ class LLMEngine:
 
         messages.append({"role": "user", "content": message})
 
-        # Generate response
-        response = await self._client.chat(
-            model=self._model,
-            messages=messages,
-        )
-
-        assistant_message = response.message.content
+        # -------------------------------------------------------------
+        # ALAS 2.0 Mixture of Compute Router (Phase 12)
+        # -------------------------------------------------------------
+        from backend.app.llm.router import get_semantic_router
+        router = get_semantic_router()
+        route = router.route(message)
+        
+        if route == "cloud":
+            from backend.app.llm.cloud_engine import get_cloud_engine
+            cloud = get_cloud_engine()
+            
+            full_cloud_response = []
+            async for chunk in cloud.generate_stream(messages, stream=False):
+                full_cloud_response.append(chunk)
+                
+            assistant_message = "".join(full_cloud_response)
+        else:
+            # Generate response via Local Ollama
+            response = await self._client.chat(
+                model=self._model,
+                messages=messages,
+            )
+            assistant_message = response.message.content
 
         # Store both user and assistant messages in episodic memory
         self._retriever.store_interaction(
@@ -173,6 +189,32 @@ class LLMEngine:
             session_id=session_id,
             user_id=user_id,
         )
+
+        # -------------------------------------------------------------
+        # ALAS 2.0 Mixture of Compute Router (Phase 12)
+        # -------------------------------------------------------------
+        from backend.app.llm.router import get_semantic_router
+        router = get_semantic_router()
+        route = router.route(message)
+        
+        if route == "cloud":
+            yield "\n\n_☁️ [Mixture of Compute] Task complexity exceeds local thresholds. Routing to Cloud..._\n\n"
+            from backend.app.llm.cloud_engine import get_cloud_engine
+            cloud = get_cloud_engine()
+            
+            full_cloud_response = []
+            async for chunk in cloud.generate_stream(messages):
+                full_cloud_response.append(chunk)
+                yield chunk
+                
+            self._retriever.store_interaction(
+                content="".join(full_cloud_response),
+                role="assistant",
+                mode=mode,
+                session_id=session_id,
+                user_id=user_id,
+            )
+            return
 
         # -------------------------------------------------------------
         # ALAS 2.0 Local Superintelligence (Tree-of-Thoughts)
