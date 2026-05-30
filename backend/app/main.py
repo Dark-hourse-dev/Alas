@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from backend.app.config import get_settings, ensure_data_dirs
-from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks, schedules, webrtc
+from backend.app.api import chat, memory, profile, voice, knowledge, sync, learning, permissions, tasks, schedules, webrtc, ar_hud
 from backend.app.proactive.scheduler import get_scheduler
 from backend.app.proactive.monitors import register_monitors
 
@@ -130,6 +130,7 @@ app.include_router(permissions.router)
 app.include_router(tasks.router)
 app.include_router(schedules.router)
 app.include_router(webrtc.router)
+app.include_router(ar_hud.router)
 
 
 # --- Static Files (Frontend) ---
