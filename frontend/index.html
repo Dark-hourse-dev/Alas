@@ -57,53 +57,30 @@
                 </div>
             </div>
 
-            <!-- Mode Selector -->
-            <div class="sidebar-section">
-                <h3 class="section-title">Mode</h3>
-                <div class="mode-selector" id="mode-selector">
-                    <button class="mode-btn active" data-mode="casual" id="mode-casual" title="Casual Mode">
-                        <span class="mode-icon">💬</span>
-                        <span class="mode-label">Casual</span>
+            <!-- IDE Views -->
+            <div class="sidebar-section" style="padding-top: 20px;">
+                <div class="mode-selector">
+                    <button class="mode-btn active" id="btn-view-explorer" title="Explorer">
+                        <span class="mode-icon">📁</span>
                     </button>
-                    <button class="mode-btn" data-mode="work" id="mode-work" title="Work Mode">
-                        <span class="mode-icon">💼</span>
-                        <span class="mode-label">Work</span>
-                    </button>
-                    <button class="mode-btn" data-mode="creative" id="mode-creative" title="Creative Mode">
-                        <span class="mode-icon">🎨</span>
-                        <span class="mode-label">Creative</span>
-                    </button>
-                    <button class="mode-btn" data-mode="learning" id="mode-learning" title="Learning Mode">
-                        <span class="mode-icon">📚</span>
-                        <span class="mode-label">Learning</span>
-                    </button>
-                    <button class="mode-btn" data-mode="calm" id="mode-calm" title="Calm Mode">
-                        <span class="mode-icon">🧘</span>
-                        <span class="mode-label">Calm</span>
+                    <button class="mode-btn" id="btn-view-extensions" title="Extensions">
+                        <span class="mode-icon">🧩</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Navigation -->
-            <div class="sidebar-section">
-                <h3 class="section-title">Navigation</h3>
+            <!-- Navigation (Bottom Aligned) -->
+            <div class="sidebar-section" style="margin-top: auto; padding-bottom: 20px;">
                 <div class="mode-selector">
-                    <button class="mode-btn" id="btn-nav-settings" title="Open Settings">
+                    <button class="mode-btn" id="btn-nav-settings" title="Settings & Help">
                         <span class="mode-icon">⚙️</span>
-                        <span class="mode-label">Settings</span>
                     </button>
-                    <button class="mode-btn" id="btn-nav-help" title="View Help">
-                        <span class="mode-icon">❓</span>
-                        <span class="mode-label">Help</span>
-                    </button>
-                    <button class="mode-btn" id="btn-nav-feedback" title="Send Feedback">
-                        <span class="mode-icon">💬</span>
-                        <span class="mode-label">Feedback</span>
-                    </button>
-                    <button class="mode-btn" id="btn-nav-evolution" title="Behavioral Evolution">
-                        <span class="mode-icon">🧬</span>
-                        <span class="mode-label">Evolution</span>
-                    </button>
+                    <!-- User Profile Avatar (Moved to bottom) -->
+                    <div class="profile-card" id="profile-card" style="margin-top: 10px;">
+                        <div class="profile-avatar" id="profile-avatar" title="Edit Profile" style="cursor: pointer; border: 2px solid var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow);">
+                            <span>?</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -115,33 +92,68 @@
                 </div>
             </div>
 
-            <!-- User Profile -->
-            <div class="sidebar-section">
-                <h3 class="section-title">Profile</h3>
-                <div class="profile-card" id="profile-card">
-                    <div class="profile-avatar" id="profile-avatar" title="Click to change your Avatar Emoji!" style="cursor: pointer; border: 2px solid var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow);">
-                        <span>?</span>
-                    </div>
-                    <div class="profile-info">
-                        <span class="profile-name" id="profile-name">New User</span>
-                        <span class="profile-style" id="profile-style">balanced</span>
-                    </div>
-                    <button class="profile-edit-btn" id="btn-edit-profile" title="Edit profile">⚙️</button>
-                </div>
-            </div>
-
-            <!-- Status -->
-            <div class="sidebar-footer">
+            <!-- Status Footer -->
+            <div class="sidebar-footer" style="padding: 10px 0;">
                 <div class="status-indicator" id="status-indicator">
                     <span class="status-dot"></span>
-                    <span class="status-text" id="status-text">Connecting...</span>
                 </div>
-                <div class="version">v0.4.0 · Phase 3.5</div>
             </div>
         </aside>
 
-        <!-- Main Chat Area -->
-        <main class="chat-main">
+        <!-- IDE Explorer Panel -->
+        <aside id="ide-explorer" class="ide-explorer">
+            <div class="explorer-header">
+                <h3>WORKSPACE</h3>
+                <button id="btn-refresh-fs" title="Refresh" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">🔄</button>
+            </div>
+            <div id="file-tree" class="file-tree">
+                <!-- File items injected here -->
+            </div>
+        </aside>
+
+        <!-- IDE Extensions Panel -->
+        <aside id="ide-extensions" class="ide-explorer" style="display:none;">
+            <div class="explorer-header">
+                <h3>EXTENSIONS</h3>
+            </div>
+            <div style="padding: 12px; border-bottom: 1px solid var(--border-subtle);">
+                <input type="text" id="ext-search-input" placeholder="Search extensions in Marketplace..." class="modal-input" style="width:100%; font-size:0.8rem; padding: 8px;" />
+            </div>
+            <div id="ext-results-container" class="file-tree" style="padding: 12px;">
+                <!-- Extensions injected here by ide.js -->
+                <div style="text-align:center; color:var(--text-muted); font-size:0.8rem; padding: 20px;">Type to search official extensions...</div>
+            </div>
+        </aside>
+
+        <!-- IDE Editor Panel -->
+        <main id="ide-editor" class="ide-editor">
+            <div class="editor-header">
+                <div class="editor-tabs" id="editor-tabs-container">
+                    <!-- Tabs injected here -->
+                </div>
+                <div class="editor-actions">
+                    <button id="btn-save-file" class="header-btn" title="Save File (Ctrl+S)">💾 Save</button>
+                </div>
+            </div>
+            <div class="editor-container" id="editor-container" style="flex:1; position:relative;">
+                <div id="code-editor-container" style="position:absolute; inset:0; width:100%; height:100%;"></div>
+                <!-- PDF Viewer Container -->
+                <div id="pdf-viewer-container" style="position:absolute; inset:0; width:100%; height:100%; display:none;">
+                    <iframe id="pdf-iframe" style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+                <!-- Extension Details Viewer -->
+                <div id="ext-viewer-container" style="position:absolute; inset:0; width:100%; height:100%; display:none; overflow-y:auto; background:var(--bg-primary); padding:40px;">
+                    <!-- Injected dynamically by ide.js -->
+                </div>
+                <!-- Fallback/loading state -->
+                <div id="editor-loading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-muted); background:var(--bg-primary); z-index:5;">
+                    Initializing Editor...
+                </div>
+            </div>
+        </main>
+
+        <!-- Main Chat Area (Right Sidebar) -->
+        <aside class="chat-main ide-chat" id="chat-panel">
             <!-- Chat Header -->
             <header class="chat-header">
                 <button class="sidebar-toggle" id="btn-sidebar-toggle" title="Toggle sidebar">
@@ -286,7 +298,7 @@
                     <span class="char-count" id="char-count"></span>
                 </div>
             </div>
-        </main>
+        </aside>
 
         <!-- Memory Search Modal -->
         <div class="modal-overlay" id="memory-search-modal" style="display:none">
@@ -302,27 +314,108 @@
             </div>
         </div>
 
-        <!-- Profile Edit Modal -->
-        <div class="modal-overlay" id="profile-edit-modal" style="display:none">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3>⚙️ Edit Profile</h3>
-                    <button class="modal-close" id="btn-close-profile-modal">&times;</button>
+        <!-- Unified Settings Modal -->
+        <div class="modal-overlay" id="settings-modal" style="display:none">
+            <div class="modal modal-wide" style="height: 65vh; max-width: 700px; display:flex; flex-direction:column; background:var(--bg-primary); border: 1px solid var(--border-subtle); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                <div class="modal-header" style="background:var(--bg-secondary); border-bottom:1px solid var(--border-subtle);">
+                    <h3>⚙️ Settings</h3>
+                    <button class="modal-close" id="btn-close-settings-modal">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <label class="modal-label">Name</label>
-                    <input type="text" id="profile-input-name" placeholder="Your name" class="modal-input" />
-                    <label class="modal-label">Preferred Name</label>
-                    <input type="text" id="profile-input-preferred" placeholder="What to call you" class="modal-input" />
-                    <label class="modal-label">Communication Style</label>
-                    <select id="profile-input-style" class="modal-input">
-                        <option value="balanced">Balanced</option>
-                        <option value="concise">Concise</option>
-                        <option value="detailed">Detailed</option>
-                    </select>
-                    <label class="modal-label">Topics of Interest</label>
-                    <input type="text" id="profile-input-topics" placeholder="Comma-separated topics" class="modal-input" />
-                    <button class="modal-save-btn" id="btn-save-profile">Save Profile</button>
+                <div class="modal-body" style="flex:1; display:flex; padding:0; overflow:hidden;">
+                    <!-- Settings Sidebar -->
+                    <div style="width:200px; border-right:1px solid var(--border-subtle); background:var(--bg-secondary); padding:20px 0;">
+                        <div class="settings-tab active" data-tab="profile" style="padding:12px 20px; cursor:pointer; font-size:0.9rem; color:var(--text-primary); border-left:3px solid var(--accent-primary); transition:background 0.2s;">👤 User Profile</div>
+                        <div class="settings-tab" data-tab="ide" style="padding:12px 20px; cursor:pointer; font-size:0.9rem; color:var(--text-secondary); border-left:3px solid transparent; transition:background 0.2s;">💻 Text Editor</div>
+                        <div class="settings-tab" data-tab="ai" style="padding:12px 20px; cursor:pointer; font-size:0.9rem; color:var(--text-secondary); border-left:3px solid transparent; transition:background 0.2s;">🤖 AI Engine</div>
+                    </div>
+                    <!-- Settings Content -->
+                    <div style="flex:1; padding:30px; overflow-y:auto; background:var(--bg-primary);">
+                        <!-- Profile Tab -->
+                        <div class="settings-pane active" id="pane-profile">
+                            <h2 style="margin-bottom:24px; font-weight:400; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">User Profile</h2>
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div>
+                                    <label class="modal-label">Name</label>
+                                    <input type="text" id="profile-input-name" placeholder="Your full name" class="modal-input" />
+                                </div>
+                                <div>
+                                    <label class="modal-label">Preferred Name</label>
+                                    <input type="text" id="profile-input-preferred" placeholder="What should ALAS call you?" class="modal-input" />
+                                </div>
+                                <div>
+                                    <label class="modal-label">Communication Style</label>
+                                    <select id="profile-input-style" class="modal-input">
+                                        <option value="balanced">Balanced</option>
+                                        <option value="concise">Concise</option>
+                                        <option value="detailed">Detailed</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="modal-label">Topics of Interest (Comma separated)</label>
+                                    <input type="text" id="profile-input-topics" placeholder="E.g. Biology, Coding, AI" class="modal-input" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- IDE Tab -->
+                        <div class="settings-pane" id="pane-ide" style="display:none;">
+                            <h2 style="margin-bottom:24px; font-weight:400; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">Text Editor</h2>
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div>
+                                    <label class="modal-label">Color Theme</label>
+                                    <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Specifies the color theme used in the Monaco Editor.</p>
+                                    <select id="ide-input-theme" class="modal-input">
+                                        <option value="vs-dark">Dark+ (default dark)</option>
+                                        <option value="hc-black">High Contrast Dark</option>
+                                        <option value="vs">Light+ (default light)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="modal-label">Font Size</label>
+                                    <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Controls the font size in pixels.</p>
+                                    <input type="number" id="ide-input-fontsize" value="14" class="modal-input" />
+                                </div>
+                                <div>
+                                    <label class="modal-label">Word Wrap</label>
+                                    <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Controls how lines should wrap.</p>
+                                    <select id="ide-input-wordwrap" class="modal-input">
+                                        <option value="off">off</option>
+                                        <option value="on">on</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Tab -->
+                        <div class="settings-pane" id="pane-ai" style="display:none;">
+                            <h2 style="margin-bottom:24px; font-weight:400; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">AI Configuration & Help</h2>
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div>
+                                    <label class="modal-label">Model Engine</label>
+                                    <select class="modal-input" disabled>
+                                        <option>llama3.2:3b (Local API)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="modal-label">Context Window</label>
+                                    <input type="number" value="8192" class="modal-input" disabled />
+                                </div>
+                                <div style="margin-top: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                    <h4 style="margin-bottom: 8px;">Need Help?</h4>
+                                    <ul style="font-size: 0.8rem; color: var(--text-secondary); padding-left: 20px; line-height: 1.6;">
+                                        <li><strong>File Explorer:</strong> Browse your local workspace securely via MCP.</li>
+                                        <li><strong>Extensions:</strong> Search the Open VSX marketplace for official plugins.</li>
+                                        <li><strong>Editor:</strong> Use Monaco Editor with Ctrl+S/Cmd+S to save instantly.</li>
+                                        <li><strong>Chat:</strong> Engage ALAS on the right panel while you code.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Footer with Save Button -->
+                <div style="padding: 16px 24px; background:var(--bg-secondary); border-top: 1px solid var(--border-subtle); display:flex; justify-content:flex-end;">
+                    <button class="modal-save-btn" id="btn-save-settings" style="margin:0;">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -485,6 +578,10 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
     <script src="/js/chat.js"></script>
     <script src="/js/voice.js"></script>
     <script src="/js/memory.js"></script>
@@ -494,6 +591,7 @@
     <script src="/js/permissions.js"></script>
     <script src="/js/tasks.js"></script>
     <script src="/js/webrtc.js"></script>
+    <script src="/js/ide.js"></script>
     <script src="/js/app.js"></script>
 
     <!-- Inline styles for WebRTC indicator active state -->

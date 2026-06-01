@@ -220,9 +220,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Sidebar Navigation ---
-  const profModal = document.getElementById('profile-edit-modal');
+  const settingsModal = document.getElementById('settings-modal');
   const openSettings = async () => {
-    profModal.style.display = 'flex';
+    settingsModal.style.display = 'flex';
+    
+    // Load Profile
     try {
       const res = await fetch('/api/profile/default');
       if (res.ok) {
@@ -233,6 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('profile-input-topics').value = (p.topics_of_interest || []).join(', ');
       }
     } catch (e) {}
+
+    // Load IDE Settings
+    const ideSettings = JSON.parse(localStorage.getItem('alas_ide_settings')) || { theme: 'vs-dark', fontSize: 14, wordWrap: 'off' };
+    document.getElementById('ide-input-theme').value = ideSettings.theme;
+    document.getElementById('ide-input-fontsize').value = ideSettings.fontSize;
+    document.getElementById('ide-input-wordwrap').value = ideSettings.wordWrap;
   };
 
   const btnSettings = document.getElementById('btn-nav-settings');
@@ -278,33 +286,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 400);
   });
 
-  // --- Profile Modal ---
-  document.getElementById('btn-edit-profile').addEventListener('click', openSettings);
-  document.getElementById('btn-close-profile-modal').addEventListener('click', () => {
-    profModal.style.display = 'none';
+  // --- Unified Settings Modal ---
+  const btnSettingsNav = document.getElementById('btn-nav-settings');
+  if (btnSettingsNav) btnSettingsNav.addEventListener('click', openSettings);
+  
+  const btnEditProfile = document.getElementById('btn-edit-profile');
+  if (btnEditProfile) btnEditProfile.addEventListener('click', openSettings);
+
+  document.getElementById('btn-close-settings-modal').addEventListener('click', () => {
+    settingsModal.style.display = 'none';
   });
 
-  document.getElementById('btn-save-profile').addEventListener('click', async () => {
-    const data = {
-      name: document.getElementById('profile-input-name').value || null,
-      preferred_name: document.getElementById('profile-input-preferred').value || null,
-      communication_style: document.getElementById('profile-input-style').value,
-      topics_of_interest: document.getElementById('profile-input-topics').value
-        .split(',').map(t => t.trim()).filter(Boolean),
-    };
-    try {
-      await fetch('/api/profile/default', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+  // Settings Tabs Logic
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+          document.querySelectorAll('.settings-tab').forEach(t => {
+              t.classList.remove('active');
+              t.style.borderLeftColor = 'transparent';
+              t.style.color = 'var(--text-secondary)';
+          });
+          document.querySelectorAll('.settings-pane').forEach(p => p.style.display = 'none');
+          
+          tab.classList.add('active');
+          tab.style.borderLeftColor = 'var(--accent-primary)';
+          tab.style.color = 'var(--text-primary)';
+          document.getElementById('pane-' + tab.dataset.tab).style.display = 'block';
       });
-      profModal.style.display = 'none';
-      loadProfile();
-    } catch (e) {}
+  });
+
+  document.getElementById('btn-save-settings').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-save-settings');
+    const oldText = btn.textContent;
+    btn.textContent = "Saving...";
+    btn.disabled = true;
+
+    try {
+        // Save Profile
+        const profileData = {
+          name: document.getElementById('profile-input-name').value || null,
+          preferred_name: document.getElementById('profile-input-preferred').value || null,
+          communication_style: document.getElementById('profile-input-style').value,
+          topics_of_interest: document.getElementById('profile-input-topics').value
+            .split(',').map(t => t.trim()).filter(Boolean),
+        };
+        
+        await fetch('/api/profile/default', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData),
+        });
+        loadProfile();
+
+        // Save IDE Settings
+        const ideSettings = {
+            theme: document.getElementById('ide-input-theme').value,
+            fontSize: parseInt(document.getElementById('ide-input-fontsize').value, 10) || 14,
+            wordWrap: document.getElementById('ide-input-wordwrap').value
+        };
+        localStorage.setItem('alas_ide_settings', JSON.stringify(ideSettings));
+        
+        // Broadcast IDE event for Monaco
+        window.dispatchEvent(new CustomEvent('alas_ide_settings_updated', { detail: ideSettings }));
+
+        btn.textContent = "Saved!";
+        setTimeout(() => {
+            btn.textContent = oldText;
+            btn.disabled = false;
+            settingsModal.style.display = 'none';
+        }, 800);
+
+    } catch (e) {
+        console.error("Failed to save settings:", e);
+        btn.textContent = "Error Saving";
+        setTimeout(() => {
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }, 2000);
+    }
   });
 
   // Close modals on overlay click
-  [memModal, profModal].forEach(modal => {
+  [memModal, settingsModal].forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.style.display = 'none';
     });

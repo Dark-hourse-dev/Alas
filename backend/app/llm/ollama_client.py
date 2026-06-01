@@ -36,7 +36,8 @@ def generate_completion(
             ],
             options={"temperature": 0.3}
         )
-        return response['message']['content']
+        content = response.message.content if hasattr(response, 'message') else response['message']['content']
+        return content
     except Exception as e1:
         logger.warning(f"Primary model ({primary_model}) failed: {e1}. Initiating Fallback Chain to {fallback_model}...")
         
@@ -50,7 +51,8 @@ def generate_completion(
                 ],
                 options={"temperature": 0.3}
             )
-            return f"[FALLBACK MODE: {fallback_model}] " + response['message']['content']
+            content = response.message.content if hasattr(response, 'message') else response['message']['content']
+            return f"[FALLBACK MODE: {fallback_model}] " + content
         except Exception as e2:
             logger.error(f"Fallback model ({fallback_model}) also failed: {e2}. Returning minimal safe response.")
             

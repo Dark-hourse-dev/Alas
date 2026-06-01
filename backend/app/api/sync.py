@@ -28,6 +28,15 @@ _devices: dict[str, dict] = {}
 _retriever: Optional[MemoryRetriever] = None
 _kg: Optional[KnowledgeGraph] = None
 
+# Pre-register the internal mesh daemon token so Rust daemon sync requests are accepted
+_devices["mesh-daemon-internal"] = {
+    "device_name": "Mesh Daemon (Internal)",
+    "device_type": "daemon",
+    "user_id": "default",
+    "registered_at": datetime.now(timezone.utc).isoformat(),
+    "last_sync": datetime.now(timezone.utc).isoformat(),
+}
+
 
 def _get_retriever() -> MemoryRetriever:
     global _retriever

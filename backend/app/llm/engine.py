@@ -78,6 +78,11 @@ class LLMEngine:
         # Inject Phase 4 Context
         env_context = get_context_engine().build_context_prompt(evolution.current_genome.get("proactivity_threshold", 0.5))
         system_prompt += env_context
+        
+        # Inject Phase 19 Emotional State
+        from backend.app.cognition.emotion import get_emotion_machine
+        emotion_modifier = get_emotion_machine().get_prompt_modifier()
+        system_prompt += f"\n\n[EMOTIONAL STATE]: {emotion_modifier}"
 
         # Compose messages
         messages = [{"role": "system", "content": system_prompt}]
@@ -98,12 +103,7 @@ class LLMEngine:
         if route == "cloud":
             from backend.app.llm.cloud_engine import get_cloud_engine
             cloud = get_cloud_engine()
-            
-            full_cloud_response = []
-            async for chunk in cloud.generate_stream(messages, stream=False):
-                full_cloud_response.append(chunk)
-                
-            assistant_message = "".join(full_cloud_response)
+            assistant_message = await cloud.generate_complete(messages)
         else:
             # Generate response via Local Ollama
             response = await self._client.chat(
@@ -174,6 +174,11 @@ class LLMEngine:
         # Inject Phase 4 Context
         env_context = get_context_engine().build_context_prompt(evolution.current_genome.get("proactivity_threshold", 0.5))
         system_prompt += env_context
+        
+        # Inject Phase 19 Emotional State
+        from backend.app.cognition.emotion import get_emotion_machine
+        emotion_modifier = get_emotion_machine().get_prompt_modifier()
+        system_prompt += f"\n\n[EMOTIONAL STATE]: {emotion_modifier}"
 
         # Compose messages
         messages = [{"role": "system", "content": system_prompt}]

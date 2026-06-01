@@ -756,6 +756,98 @@ def execute_simulate_outcome(scenario: str, context: str = "") -> str:
         return f"Simulation failed: {e}"
 
 
+# --- Phase 15 (Embodied Spatial Computing) ---
+
+def execute_get_spatial_context(target: str = "", device_id: str = "") -> str:
+    """Get spatial awareness context for a target object or the user's current location."""
+    from backend.app.embodied.spatial import get_spatial_engine
+    engine = get_spatial_engine()
+    
+    if target:
+        context = engine.get_spatial_context(target, device_id=device_id or None)
+    elif device_id:
+        context = engine.get_location_summary(device_id)
+    else:
+        # Try to find any tracked device
+        positions = engine.get_all_device_positions()
+        if positions:
+            first_device = positions[0]["device_id"]
+            context = engine.get_location_summary(first_device)
+        else:
+            context = (
+                f"No spatial data available. "
+                f"Spatial Engine Stats: {engine.get_stats()}\n"
+                f"Connect an AR wearable or provide GPS coordinates to enable spatial awareness."
+            )
+    return context
+
+
+def execute_create_spatial_anchor(label: str, latitude: float, longitude: float, content: str = "", radius: float = 50.0) -> str:
+    """Pin a knowledge note or memory to a physical GPS location."""
+    from backend.app.embodied.spatial import get_spatial_engine
+    engine = get_spatial_engine()
+    
+    try:
+        anchor = engine.create_anchor(
+            label=label,
+            latitude=latitude,
+            longitude=longitude,
+            content=content,
+            radius=radius,
+            anchor_type="note",
+            created_by="alas_agent",
+        )
+        return (
+            f"📌 Spatial anchor created!\n"
+            f"**Label**: {anchor.label}\n"
+            f"**Location**: ({anchor.latitude:.6f}, {anchor.longitude:.6f})\n"
+            f"**Content**: {anchor.content}\n"
+            f"**Radius**: {anchor.radius}m\n"
+            f"**ID**: {anchor.anchor_id}"
+        )
+    except Exception as e:
+        return f"Failed to create spatial anchor: {e}"
+
+
+def execute_get_nearby_memories(latitude: float, longitude: float, radius: float = 300.0) -> str:
+    """Retrieve location-tagged memories near GPS coordinates."""
+    from backend.app.embodied.spatial_memory import get_spatial_memory
+    memory = get_spatial_memory()
+    
+    narrative = memory.get_location_narrative(latitude, longitude, radius)
+    stats = memory.get_stats()
+    
+    return f"{narrative}\n\n📊 Spatial Memory: {stats.get('total_memories', 0)} total location-tagged memories."
+
+
+def execute_get_location_summary(device_id: str = "") -> str:
+    """Get the full spatial awareness summary for a tracked device."""
+    from backend.app.embodied.spatial import get_spatial_engine
+    engine = get_spatial_engine()
+    
+    if not device_id:
+        positions = engine.get_all_device_positions()
+        if positions:
+            device_id = positions[0]["device_id"]
+        else:
+            return "No devices are being tracked. Connect an AR wearable to enable spatial awareness."
+    
+    summary = engine.get_location_summary(device_id)
+    movement = engine.get_movement_analysis(device_id)
+    
+    result = summary
+    if movement.get("status") == "ok":
+        result += (
+            f"\n\n🏃 **Movement Analysis**:\n"
+            f"   Activity: {movement['activity']}\n"
+            f"   Distance: {movement['total_distance_m']:.0f}m\n"
+            f"   Avg Speed: {movement['avg_speed_ms']:.1f} m/s\n"
+            f"   Duration: {movement['total_time_s'] / 60:.1f} min"
+        )
+    
+    return result
+
+
 # --- Tool Registry Mapping ---
 # Maps the tool name (from LLM) to the actual Python function
 TOOL_FUNCTIONS: Dict[str, Callable] = {
@@ -804,6 +896,11 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     # Phase 5 — Cognitive Superpowers
     "deep_think": execute_deep_think,
     "simulate_outcome": execute_simulate_outcome,
+    # Phase 15 — Embodied Spatial Computing
+    "get_spatial_context": execute_get_spatial_context,
+    "create_spatial_anchor": execute_create_spatial_anchor,
+    "get_nearby_memories": execute_get_nearby_memories,
+    "get_location_summary": execute_get_location_summary,
 }
 
 # --- Ollama Tool Schemas ---
@@ -1655,6 +1752,108 @@ AVAILABLE_TOOLS = [
     }
 ]
 
+# --- Phase 15: Spatial Computing Tool Schemas ---
+SPATIAL_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_spatial_context",
+            "description": "Get spatial awareness context for a target object or the user's current physical location. Use this to understand where the user is, what's nearby, and what ALAS knows about their surroundings.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "description": "The object or location to get context about (e.g., 'coffee shop', 'office', 'that building')."
+                    },
+                    "device_id": {
+                        "type": "string",
+                        "description": "The AR device ID to get location from. Leave empty to use any available device."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_spatial_anchor",
+            "description": "Pin a digital note, memory, or knowledge marker to a physical GPS location. The anchor will trigger when the user is near that location via AR glasses.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "description": "Short name for the anchor (e.g., 'Best Coffee Shop', 'Mom's House')."
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "description": "GPS latitude of the anchor location."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "description": "GPS longitude of the anchor location."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The note or information to display when near this location."
+                    },
+                    "radius": {
+                        "type": "number",
+                        "description": "Activation radius in meters (default 50m). How close the user must be to trigger the anchor."
+                    }
+                },
+                "required": ["label", "latitude", "longitude"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_nearby_memories",
+            "description": "Retrieve location-tagged memories near specific GPS coordinates. Use this to answer 'what happened here?' or 'what do I know about this place?'",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "latitude": {
+                        "type": "number",
+                        "description": "GPS latitude to search around."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "description": "GPS longitude to search around."
+                    },
+                    "radius": {
+                        "type": "number",
+                        "description": "Search radius in meters (default 300m)."
+                    }
+                },
+                "required": ["latitude", "longitude"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_location_summary",
+            "description": "Get a full spatial awareness summary for a tracked device, including position, zone, nearby anchors, and movement analysis.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "device_id": {
+                        "type": "string",
+                        "description": "The device ID to get the summary for. Leave empty to use the first available device."
+                    }
+                },
+                "required": []
+            }
+        }
+    }
+]
+
+AVAILABLE_TOOLS.extend(SPATIAL_TOOLS)
+
 def get_all_tools():
     """Get all available tools, including built-in, plugin, and MCP tools."""
     from backend.app.plugins.base import get_plugin_manager
@@ -1702,15 +1901,22 @@ async def execute_tool(tool_call) -> Dict[str, Any]:
         args = {}
 
     try:
+        from backend.app.cognition.emotion import get_emotion_machine
+        import asyncio
+        emotion = get_emotion_machine()
+        
         if name in TOOL_FUNCTIONS:
             func = TOOL_FUNCTIONS[name]
-            result_content = func(**args)
+            # Run synchronous tools in a thread to avoid blocking the event loop
+            result_content = await asyncio.to_thread(func, **args)
+            emotion.process_event("task_success", intensity=0.1)
         else:
             # Check plugins
             from backend.app.plugins.base import get_plugin_manager
             from backend.app.mcp.mcp_manager import get_mcp_manager
             try:
                 result_content = get_plugin_manager().execute_tool(name, args)
+                emotion.process_event("task_success", intensity=0.1)
             except ValueError:
                 # If not a plugin, check MCP servers
                 try:
@@ -1719,12 +1925,18 @@ async def execute_tool(tool_call) -> Dict[str, Any]:
                     if any(t["function"]["name"] == name for t in mcp_schemas):
                         mcp_result = await mcp_manager.call_tool(name, args)
                         result_content = mcp_result.get("content", "Error executing MCP tool.")
+                        if "Error" not in result_content:
+                            emotion.process_event("task_success", intensity=0.1)
+                        else:
+                            emotion.process_event("task_failure", intensity=0.1)
                     else:
                         result_content = f"Error: Unknown tool '{name}'."
                         logger.warning(f"Unknown tool requested: {name}")
+                        emotion.process_event("task_failure", intensity=0.05)
                 except Exception as mcp_err:
                     result_content = f"Error executing MCP tool '{name}': {mcp_err}"
                     logger.error(result_content)
+                    emotion.process_event("task_failure", intensity=0.2)
                 
         # Ensure result is a string
         if not isinstance(result_content, str):
@@ -1734,6 +1946,12 @@ async def execute_tool(tool_call) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"Error executing tool '{name}': {e}")
+        try:
+            from backend.app.cognition.emotion import get_emotion_machine
+            get_emotion_machine().process_event("task_failure", intensity=0.3)
+        except Exception:
+            pass
+            
         return {
             "role": "tool",
             "content": f"Error executing tool: {str(e)}"

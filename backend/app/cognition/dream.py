@@ -59,12 +59,28 @@ Output ONLY the final Insight Rule."""
             logger.info(f"🌌 Dream Insight Generated: {insight}")
             
             # 3. Store the insight back into long-term knowledge
-            from backend.app.memory.knowledge import get_knowledge_graph
-            kg = get_knowledge_graph()
-            kg.add_node("ALAS_Insight", type="insight", content=insight)
-            kg.add_edge("User", "ALAS_Insight", relation="demonstrates_pattern")
+            from backend.app.memory.knowledge_graph import KnowledgeGraph
+            kg = KnowledgeGraph()
+            kg.add_entity("ALAS_Insight", entity_type="concept", properties={"content": insight}, source="dream_cycle")
+            kg.add_relationship("User", "ALAS_Insight", relation="associated_with", context="dream_consolidation")
             
-            return f"Dream cycle complete. Insight consolidated: {insight}"
+            # 4. Phase 17: Intrinsic Motivation (Free Will)
+            # Use this new insight to formulate a proactive goal in the background
+            from backend.app.cognition.intrinsic_motivation import get_motivation_engine
+            motivation = get_motivation_engine()
+            goal_result = await motivation.generate_proactive_goals()
+            
+            # 5. Phase 20: Federated Hive-Mind
+            # Share this abstract insight with the global ALAS network
+            from backend.app.learning.federated import get_hive_mind
+            hive = get_hive_mind()
+            await hive.broadcast_abstract_skill(
+                skill_name="Dream Insight",
+                skill_logic=insight,
+                domain="user_psychology"
+            )
+            
+            return f"Dream cycle complete. Insight consolidated: {insight}\nMotivation Status: {goal_result}"
         except Exception as e:
             logger.error(f"🌌 Dream cycle failed: {e}")
             return f"Dream cycle failed: {e}"

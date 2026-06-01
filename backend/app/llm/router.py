@@ -14,7 +14,7 @@ class SemanticRouter:
     def __init__(self):
         # Triggers that explicitly demand heavy reasoning
         self.cloud_keywords = {
-            "refactor", "complex", "architect", "deep think", 
+            "architect", "deep think", 
             "analyze this codebase", "optimization", "algorithm"
         }
         

@@ -142,16 +142,36 @@ class ALASChat {
         textEl.innerHTML = this._formatMarkdown(data.response || 'No response received.');
         this.history.push({ role: 'assistant', content: data.response || '' });
 
-        // Add feedback and copy buttons
+        // Add feedback and copy buttons (using DOM API to prevent XSS)
         const rawContent = data.response || '';
-        const feedbackHtml = `
-          <div class="message-feedback">
-            <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'positive', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👍</button>
-            <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'negative', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👎</button>
-            <button class="feedback-btn" style="margin-left:8px;" onclick="navigator.clipboard.writeText(\`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/\n/g, '\\n')}\`); this.textContent='Copied!'; setTimeout(()=>this.textContent='📋', 2000)" title="Copy Response">📋</button>
-          </div>
-        `;
-        this._currentAssistant.querySelector('.message-time').insertAdjacentHTML('afterend', feedbackHtml);
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'message-feedback';
+
+        const thumbsUp = document.createElement('button');
+        thumbsUp.className = 'feedback-btn';
+        thumbsUp.textContent = '👍';
+        thumbsUp.addEventListener('click', () => this.submitFeedback(thumbsUp, 'positive', rawContent));
+
+        const thumbsDown = document.createElement('button');
+        thumbsDown.className = 'feedback-btn';
+        thumbsDown.textContent = '👎';
+        thumbsDown.addEventListener('click', () => this.submitFeedback(thumbsDown, 'negative', rawContent));
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'feedback-btn';
+        copyBtn.style.marginLeft = '8px';
+        copyBtn.textContent = '📋';
+        copyBtn.title = 'Copy Response';
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(rawContent);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => copyBtn.textContent = '📋', 2000);
+        });
+
+        feedbackDiv.appendChild(thumbsUp);
+        feedbackDiv.appendChild(thumbsDown);
+        feedbackDiv.appendChild(copyBtn);
+        this._currentAssistant.querySelector('.message-time').insertAdjacentElement('afterend', feedbackDiv);
       }
 
       this.isStreaming = false;
@@ -192,15 +212,35 @@ class ALASChat {
           
           this.history.push({ role: 'assistant', content: rawContent });
 
-          // Add feedback and copy buttons
-          const feedbackHtml = `
-            <div class="message-feedback">
-              <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'positive', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👍</button>
-              <button class="feedback-btn" onclick="window.alasChat.submitFeedback(this, 'negative', \`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">👎</button>
-              <button class="feedback-btn" style="margin-left:8px;" onclick="navigator.clipboard.writeText(\`${rawContent.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/\n/g, '\\n')}\`); this.textContent='Copied!'; setTimeout(()=>this.textContent='📋', 2000)" title="Copy Response">📋</button>
-            </div>
-          `;
-          this._currentAssistant.querySelector('.message-time').insertAdjacentHTML('afterend', feedbackHtml);
+          // Add feedback and copy buttons (using data attributes to prevent XSS)
+          const feedbackDiv = document.createElement('div');
+          feedbackDiv.className = 'message-feedback';
+
+          const thumbsUp = document.createElement('button');
+          thumbsUp.className = 'feedback-btn';
+          thumbsUp.textContent = '👍';
+          thumbsUp.addEventListener('click', () => this.submitFeedback(thumbsUp, 'positive', rawContent));
+
+          const thumbsDown = document.createElement('button');
+          thumbsDown.className = 'feedback-btn';
+          thumbsDown.textContent = '👎';
+          thumbsDown.addEventListener('click', () => this.submitFeedback(thumbsDown, 'negative', rawContent));
+
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'feedback-btn';
+          copyBtn.style.marginLeft = '8px';
+          copyBtn.textContent = '📋';
+          copyBtn.title = 'Copy Response';
+          copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(rawContent);
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = '📋', 2000);
+          });
+
+          feedbackDiv.appendChild(thumbsUp);
+          feedbackDiv.appendChild(thumbsDown);
+          feedbackDiv.appendChild(copyBtn);
+          this._currentAssistant.querySelector('.message-time').insertAdjacentElement('afterend', feedbackDiv);
 
           // TTS if enabled
           if (this.voiceOutputEnabled && window.alasVoice) {

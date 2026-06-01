@@ -114,7 +114,7 @@ class MCPManager:
                 else:
                     text_outputs.append(f"[{content.type} output]")
                     
-            final_output = "\\n".join(text_outputs)
+            final_output = "\n".join(text_outputs)
             return {"role": "tool", "content": final_output}
             
         except Exception as e:

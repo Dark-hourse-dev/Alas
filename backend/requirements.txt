@@ -64,3 +64,16 @@ paho-mqtt
 # Phase 7 Embodied Intelligence
 pybullet
 pymavlink
+
+# ALAS 2.0: Phase 11 (MCP)
+mcp
+mcp-server-sqlite
+
+# ALAS 2.0: Phase 13 (WebRTC)
+aiortc
+
+# Proactive Scheduler
+APScheduler
+
+# System Monitoring
+psutil

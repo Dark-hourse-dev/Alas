@@ -1,0 +1,19 @@
+{
+  "skills": [
+    {
+      "id": "hsk_001",
+      "name": "DeepSeek-R1 Chain-of-Thought Optimization",
+      "domain": "reasoning",
+      "logic": "When faced with logic puzzles, explicitly open with <thought> and close with </thought> before answering.",
+      "popularity": 9482
+    },
+    {
+      "id": "hsk_002",
+      "name": "FastAPI Async Generator Fix",
+      "domain": "coding",
+      "logic": "Always wrap synchronous iterators in asyncio.to_thread when inside an async generator to prevent event loop blocking.",
+      "popularity": 5120
+    }
+  ],
+  "contributions": 0
+}

@@ -46,7 +46,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Phase 4 Tools: sandbox, git, research, planner, task queue")
     logger.info(f"   Phase 6: Webcam Sensor (MediaPipe)")
     logger.info(f"   Phase 10: Internal Monologue")
-    logger.info("🧬 ALAS Phase 10 — Meta-Intelligence ready.")
+    logger.info(f"   Phase 15: Spatial Computing & AR HUD")
+    logger.info(f"   Phase 16: Autonomous Immune System")
+    logger.info(f"   Phase 18: Autonomous Economics (Wallet)")
+    logger.info(f"   Phase 20: Federated Hive-Mind")
+    logger.info("🧬 ALAS 3.0 — The Autonomous Organism is Alive.")
+    
+    # Activate Autonomous Immune System
+    from backend.app.safety.immune import get_immune_system
+    immune = get_immune_system()
+    immune.activate()
     
     # Start Scheduler
     scheduler = get_scheduler()
@@ -80,7 +89,8 @@ async def lifespan(app: FastAPI):
     import asyncio
     
     # We use a python-based SQLite MCP server if available. If it fails, MCP gracefully skips it.
-    asyncio.create_task(mcp_manager.connect_stdio_server("sqlite_mcp", "python3", ["-m", "mcp_server_sqlite", "--db-path", db_path]))
+    import sys
+    asyncio.create_task(mcp_manager.connect_stdio_server("sqlite_mcp", sys.executable, ["-m", "mcp_server_sqlite", "--db-path", db_path]))
     
     # Filesystem MCP server (Node.js via npx)
     workspace_dir = str(Path(__file__).resolve().parent.parent.parent.parent)
@@ -88,6 +98,21 @@ async def lifespan(app: FastAPI):
     
     # GitHub MCP server (Node.js via npx)
     asyncio.create_task(mcp_manager.connect_stdio_server("github_mcp", "npx", ["-y", "@modelcontextprotocol/server-github"]))
+    
+    # Initialize Spatial Engine (Phase 15)
+    from backend.app.embodied.spatial import get_spatial_engine
+    spatial_engine = get_spatial_engine()
+    logger.info(f"   Phase 15: Spatial Engine loaded — {spatial_engine.get_stats()}")
+    
+    # Initialize Digital Wallet (Phase 18)
+    from backend.app.economics.wallet import get_wallet_manager
+    wallet = get_wallet_manager()
+    logger.info(f"   Phase 18: Wallet loaded — {wallet.get_balance('USD')} USD")
+    
+    # Initialize Federated Hive-Mind (Phase 20)
+    from backend.app.learning.federated import get_hive_mind
+    hive = get_hive_mind()
+    asyncio.create_task(hive.sync_global_skills())
     
     yield
     
@@ -104,7 +129,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ALAS — Adaptive Living AI System",
     description="A persistent digital lifeform that learns, adapts, and evolves.",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -112,7 +137,7 @@ app = FastAPI(
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins + ["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -132,6 +157,8 @@ app.include_router(schedules.router)
 app.include_router(webrtc.router)
 app.include_router(ar_hud.router)
 
+from backend.app.api import fs
+app.include_router(fs.router)
 
 # --- Static Files (Frontend) ---
 frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
@@ -174,14 +201,15 @@ async def system_status():
     """System-wide health and status check."""
     from backend.app.safety.permissions import get_permission_manager
     from backend.app.tasks.queue import get_task_queue
+    from backend.app.economics.wallet import get_wallet_manager
     pm = get_permission_manager()
     actions = pm.get_recent_actions(100)
     tq = get_task_queue()
     active_tasks = tq.get_active_tasks()
     return {
         "system": "ALAS — Adaptive Living AI System",
-        "version": "1.0.0",
-        "phase": "Phase 10 — Meta-Intelligence (All Phases Complete)",
+        "version": "2.0.0",
+        "phase": "Phase 15 — Embodied Spatial Computing (ALAS 2.0)",
         "status": "online",
         "features": {
             "permission_tiers": True,
@@ -202,7 +230,26 @@ async def system_status():
             "internal_monologue": True,
             "dream_consolidation": True,
             "self_improvement": True,
+            "mcp_universal_plug": True,
+            "semantic_router": True,
+            "pii_scrubber": True,
+            "webrtc_perception": True,
+            "mesh_network": True,
+            "spatial_computing": True,
+            "ar_hud": True,
+            "spatial_anchors": True,
+            "geofencing": True,
+            "spatial_memory": True,
+            "scene_understanding": True,
+            "immune_system": True,
+            "intrinsic_motivation": True,
+            "autonomous_economics": True,
+            "emotional_state": True,
+            "federated_hive_mind": True,
         },
+        "wallet_balances": get_wallet_manager().balances,
+        "emotion_matrix": __import__('backend.app.cognition.emotion', fromlist=['get_emotion_machine']).get_emotion_machine().get_state_summary(),
+        "hive_mind_stats": __import__('backend.app.learning.federated', fromlist=['get_hive_mind']).get_hive_mind().get_stats(),
         "actions_logged": len(actions),
         "active_background_tasks": len(active_tasks),
     }

@@ -2,7 +2,7 @@
 
 > A persistent digital lifeform that learns, adapts, and evolves through continuous experience.
 
-[![Phase](https://img.shields.io/badge/Phase-14%20Mesh%20Network-blueviolet)]()
+[![Phase](https://img.shields.io/badge/Phase-15%20Spatial%20Computing-blueviolet)]()
 [![Version](https://img.shields.io/badge/Version-2.0.0-cyan)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
 
@@ -37,6 +37,14 @@
 - 💭 **Internal Monologue** — Background thread simulating continuous conscious thought
 - 🌙 **Dream Consolidation** — Nightly synthesis of episodic memory into Knowledge Graph insights
 - 🚀 **Automated Self-Improvement** — LoRA extraction and dynamic PEFT adapter training
+
+### Spatial Computing & AR (Phase 15) ✅
+- 👓 **AR Wearable HUD** — High-speed WebSocket API for Meta Ray-Bans / Apple Vision Pro
+- 🌐 **Spatial Awareness Engine** — 6-DOF device tracking, geofencing, and location-based intelligence
+- 📌 **Spatial Anchors** — Pin digital knowledge to physical GPS coordinates
+- 🗝️ **Spatial Memory** — Location-tagged memory storage and proximity recall ("what happened here?")
+- 🔍 **Scene Understanding** — Real-time AR camera analysis with contextual HUD overlays
+- 🧭 **Movement Analysis** — Activity detection (walking/running/driving) from GPS breadcrumb trails
 
 ---
 
@@ -180,6 +188,20 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for cloud deployment options (Railway, R
 | GET | `/api/tasks/plans` | List execution plans |
 | GET | `/api/schedules` | List scheduled jobs |
 | GET | `/api/status` | System health check |
+| WS | `/api/ar/ws/{device_id}` | AR wearable bidirectional stream |
+| GET | `/api/ar/status` | AR subsystem status |
+| POST | `/api/ar/anchors` | Create spatial anchor |
+| GET | `/api/ar/anchors` | List spatial anchors |
+| DELETE | `/api/ar/anchors/{id}` | Delete spatial anchor |
+| POST | `/api/ar/anchors/nearby` | Find nearby anchors |
+| POST | `/api/ar/geofences` | Create geofence zone |
+| GET | `/api/ar/geofences` | List geofences |
+| DELETE | `/api/ar/geofences/{id}` | Delete geofence |
+| POST | `/api/ar/memories` | Store spatial memory |
+| POST | `/api/ar/memories/nearby` | Recall nearby memories |
+| GET | `/api/ar/location/{device_id}` | Device location & context |
+| GET | `/api/ar/devices` | List tracked devices |
+| GET | `/api/ar/scene` | Current scene analysis |
 
 ---
 
@@ -227,6 +249,12 @@ adaptive-living-ai/
 └── .env.example                 # Environment template
 ```
 
+> **Phase 15 Modules:**
+> - `backend/app/embodied/spatial.py` — 6-DOF Spatial Awareness Engine
+> - `backend/app/embodied/spatial_memory.py` — Location-tagged Memory Layer
+> - `backend/app/embodied/scene_understanding.py` — AR Scene Analysis
+> - `backend/app/api/ar_hud.py` — Full AR Wearable API (WebSocket + REST)
+
 ---
 
 ## 🗺️ Roadmap (ALAS 2.0 Blueprint)
@@ -245,4 +273,4 @@ See the full [ALAS 2.0 Blueprint](ALAS_2.0_Blueprint.md) for architectural detai
 
 ---
 
-*ALAS v1.0.0 — Phase 10: Meta-Intelligence | May 2026*
+*ALAS v2.0.0 — Phase 15: Embodied Spatial Computing | May 2026*

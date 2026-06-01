@@ -1,0 +1,3 @@
+FROM llama3
+# Point this to your newly trained LoRA adapter weights
+ADAPTER ./backend/data/lora_adapters/alas_v1
