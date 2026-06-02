@@ -238,7 +238,7 @@ class LLMEngine:
             yield f"_🧠 [Local Superintelligence] Plan synthesized. Executing..._\n\n"
             
         # Local ReAct Loop for Tool Execution (Ollama)
-        from backend.app.llm.tools import get_all_tools, execute_tool
+        from backend.app.llm.tool_registry import get_all_tools, execute_tool
 
         full_response = []
         max_iterations = 3

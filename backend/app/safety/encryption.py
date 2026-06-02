@@ -8,6 +8,7 @@ except ImportError:
     Fernet = None
 
 import base64
+from backend.app.config import get_settings
 
 logger = logging.getLogger("alas.safety.encryption")
 
@@ -22,10 +23,14 @@ class MemoryVault:
         if Fernet is None:
             logger.error("cryptography package not installed. Memory Vault disabled.")
             
-    def generate_key_from_password(self, password: str, salt: bytes = b'alas_secure_salt_2026') -> bytes:
+    def generate_key_from_password(self, password: str, salt: bytes = None) -> bytes:
         """Derive a secure AES key from a user password."""
         if Fernet is None:
             return b""
+            
+        if salt is None:
+            settings = get_settings()
+            salt = settings.encryption_salt.encode()
             
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),

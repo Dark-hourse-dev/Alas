@@ -51,10 +51,16 @@ class FederatedHiveMind:
             try:
                 with open(self._global_skills_path, "r") as f:
                     data = json.load(f)
+                    if not isinstance(data, dict):
+                        raise TypeError("Hive skills file must be a JSON object")
                     self.downloaded_skills = data.get("skills", [])
                     self.local_contributions = data.get("contributions", 0)
-            except Exception as e:
-                logger.error(f"Failed to load hive skills: {e}")
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Hive skills file is corrupt, resetting local cache: {e}")
+                self.downloaded_skills = []
+                self.local_contributions = 0
+            except OSError as e:
+                logger.error(f"Cannot read hive skills file: {e}")
 
     def _save(self):
         """Persist hive skills to disk."""
@@ -64,8 +70,8 @@ class FederatedHiveMind:
                     "skills": self.downloaded_skills,
                     "contributions": self.local_contributions
                 }, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to save hive skills: {e}")
+        except OSError as e:
+            logger.error(f"Failed to persist hive skills to disk: {e}")
 
     async def broadcast_abstract_skill(self, skill_name: str, skill_logic: str, domain: str) -> bool:
         """

@@ -10,16 +10,17 @@ import logging
 import httpx
 from typing import AsyncGenerator, Optional, List, Dict, Any
 
+from backend.app.config import get_settings
 from backend.app.safety.scrubber import get_scrubber
 
 logger = logging.getLogger("alas.llm.cloud")
 
 class CloudEngine:
     def __init__(self):
-        # Defaults to OpenAI standard endpoint, easily configurable via ENV
-        self.api_key = os.environ.get("ALAS_CLOUD_API_KEY", "")
-        self.api_url = os.environ.get("ALAS_CLOUD_API_URL", "https://api.openai.com/v1/chat/completions")
-        self.model = os.environ.get("ALAS_CLOUD_MODEL", "gpt-4o")
+        settings = get_settings()
+        self.api_key = settings.cloud_api_key
+        self.api_url = settings.cloud_api_url
+        self.model = settings.cloud_model
         self.scrubber = get_scrubber()
 
     async def generate_complete(

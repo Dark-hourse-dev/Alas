@@ -13,9 +13,12 @@ Capabilities:
 import logging
 import time
 import json
+import threading
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
+
+from backend.app.core.errors import InsufficientFundsError, WalletIntegrityError
 
 from backend.app.config import get_settings
 
@@ -60,6 +63,7 @@ class WalletManager:
         self._data_dir.mkdir(parents=True, exist_ok=True)
         self._ledger_path = self._data_dir / "ledger.json"
         self._balance_path = self._data_dir / "balance.json"
+        self._lock = threading.Lock()  # Thread-safety for balance operations
 
         # Initialize default balances (Simulated)
         self.balances: Dict[str, float] = {
@@ -77,17 +81,28 @@ class WalletManager:
         if self._balance_path.exists():
             try:
                 with open(self._balance_path) as f:
-                    self.balances = json.load(f)
-            except Exception as e:
-                logger.error(f"Failed to load wallet balances: {e}")
+                    data = json.load(f)
+                if not isinstance(data, dict):
+                    raise WalletIntegrityError(f"Balance file is not a dict: {type(data)}")
+                self.balances = data
+            except (json.JSONDecodeError, WalletIntegrityError) as e:
+                logger.error(f"Wallet balance file corrupt, using defaults: {e}")
+                # Keep defaults but log the corruption for immune system
+            except OSError as e:
+                logger.error(f"Cannot read wallet balance file: {e}")
 
         if self._ledger_path.exists():
             try:
                 with open(self._ledger_path) as f:
                     data = json.load(f)
+                if not isinstance(data, list):
+                    raise WalletIntegrityError(f"Ledger file is not a list: {type(data)}")
                 self.transactions = [Transaction(**tx) for tx in data]
-            except Exception as e:
-                logger.error(f"Failed to load wallet ledger: {e}")
+            except (json.JSONDecodeError, WalletIntegrityError, TypeError) as e:
+                logger.error(f"Wallet ledger corrupt, starting fresh ledger: {e}")
+                self.transactions = []
+            except OSError as e:
+                logger.error(f"Cannot read wallet ledger file: {e}")
 
     def _save(self):
         """Persist balances and ledger to disk."""
@@ -96,8 +111,10 @@ class WalletManager:
                 json.dump(self.balances, f, indent=2)
             with open(self._ledger_path, "w") as f:
                 json.dump([tx.to_dict() for tx in self.transactions], f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to save wallet state: {e}")
+        except OSError as e:
+            logger.error(f"Failed to persist wallet state to disk: {e}")
+        except TypeError as e:
+            logger.error(f"Wallet state serialization error: {e}")
 
     def get_balance(self, currency: str = "USD") -> float:
         """Check the available balance for a specific currency."""
@@ -109,31 +126,33 @@ class WalletManager:
 
     def process_payment(self, amount: float, currency: str, recipient: str, reason: str) -> Dict[str, str]:
         """
-        Process a payment (debit).
+        Process a payment (debit) as an atomic operation.
         In the future, this will sign a Web3 transaction and broadcast it.
         """
-        currency = currency.upper()
-        if not self.can_afford(amount, currency):
-            logger.warning(f"Wallet: Insufficient funds for {amount} {currency} to {recipient}.")
-            return {"status": "failed", "reason": "insufficient_funds"}
-
         import uuid
-        tx_id = f"tx_{uuid.uuid4().hex[:12]}"
+        currency = currency.upper()
         
-        # Deduct balance
-        self.balances[currency] -= amount
-        
-        # Record transaction
-        tx = Transaction(
-            tx_id=tx_id,
-            tx_type="debit",
-            amount=amount,
-            currency=currency,
-            counterparty=recipient,
-            reason=reason
-        )
-        self.transactions.append(tx)
-        self._save()
+        with self._lock:  # Atomic check-and-deduct
+            if not self.can_afford(amount, currency):
+                logger.warning(f"Wallet: Insufficient funds for {amount} {currency} to {recipient}.")
+                return {"status": "failed", "reason": "insufficient_funds"}
+
+            tx_id = f"tx_{uuid.uuid4().hex[:12]}"
+            
+            # Deduct balance
+            self.balances[currency] -= amount
+            
+            # Record transaction
+            tx = Transaction(
+                tx_id=tx_id,
+                tx_type="debit",
+                amount=amount,
+                currency=currency,
+                counterparty=recipient,
+                reason=reason
+            )
+            self.transactions.append(tx)
+            self._save()
 
         logger.info(f"💸 Paid {amount} {currency} to {recipient} for: {reason}")
         return {"status": "success", "tx_id": tx_id}
@@ -142,26 +161,28 @@ class WalletManager:
         """
         Process incoming funds (credit).
         """
-        currency = currency.upper()
         import uuid
-        tx_id = f"tx_{uuid.uuid4().hex[:12]}"
+        currency = currency.upper()
         
-        # Add to balance
-        if currency not in self.balances:
-            self.balances[currency] = 0.0
-        self.balances[currency] += amount
-        
-        # Record transaction
-        tx = Transaction(
-            tx_id=tx_id,
-            tx_type="credit",
-            amount=amount,
-            currency=currency,
-            counterparty=sender,
-            reason=reason
-        )
-        self.transactions.append(tx)
-        self._save()
+        with self._lock:  # Atomic credit
+            tx_id = f"tx_{uuid.uuid4().hex[:12]}"
+            
+            # Add to balance
+            if currency not in self.balances:
+                self.balances[currency] = 0.0
+            self.balances[currency] += amount
+            
+            # Record transaction
+            tx = Transaction(
+                tx_id=tx_id,
+                tx_type="credit",
+                amount=amount,
+                currency=currency,
+                counterparty=sender,
+                reason=reason
+            )
+            self.transactions.append(tx)
+            self._save()
 
         logger.info(f"💰 Received {amount} {currency} from {sender} for: {reason}")
         return tx_id

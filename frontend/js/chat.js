@@ -326,8 +326,8 @@ class ALASChat {
     return text
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-          const escapedCode = code.replace(/`/g, '\\`').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
-          return `<div style="position:relative"><pre><code>${code}</code></pre><button onclick="navigator.clipboard.writeText('${escapedCode}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 2000)" style="position:absolute; top:4px; right:4px; background:rgba(255,255,255,0.1); color:var(--text-secondary); border:none; border-radius:4px; padding:2px 6px; font-size:0.7rem; cursor:pointer;">Copy</button></div>`;
+          const codeId = 'code-' + Math.random().toString(36).slice(2, 8);
+          return `<div style="position:relative"><pre><code id="${codeId}">${code}</code></pre><button data-copy-target="${codeId}" style="position:absolute; top:4px; right:4px; background:rgba(255,255,255,0.1); color:var(--text-secondary); border:none; border-radius:4px; padding:2px 6px; font-size:0.7rem; cursor:pointer;">Copy</button></div>`;
       })
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -352,8 +352,8 @@ class ALASChat {
   _setStatus(state, text) {
     const dot = document.querySelector('.status-dot');
     const textEl = document.getElementById('status-text');
-    dot.className = `status-dot ${state}`;
-    textEl.textContent = text;
+    if (dot) dot.className = `status-dot ${state}`;
+    if (textEl) textEl.textContent = text;
     if (this.onStatusChange) this.onStatusChange(state);
   }
 
@@ -364,8 +364,10 @@ class ALASChat {
     container.innerHTML = '';
     const welcome = document.getElementById('welcome-message');
     if (welcome) { welcome.style.display = 'flex'; container.appendChild(welcome); }
-    document.getElementById('header-session').textContent = `Session: ${this.sessionId.slice(0, 8)}`;
-    document.getElementById('stat-session').textContent = '0';
+    const headerSession = document.getElementById('header-session');
+    if (headerSession) headerSession.textContent = `Session: ${this.sessionId.slice(0, 8)}`;
+    const statSession = document.getElementById('stat-session');
+    if (statSession) statSession.textContent = '0';
     if (window.loadChatHistory) window.loadChatHistory();
   }
 
@@ -432,5 +434,17 @@ class ALASChat {
 const style = document.createElement('style');
 style.textContent = `.cursor-blink { animation: blink 0.7s infinite; color: var(--accent-primary); } @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`;
 document.head.appendChild(style);
+
+// Delegated handler for safe code-copy buttons (avoids inline onclick XSS)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-copy-target]');
+  if (!btn) return;
+  const codeEl = document.getElementById(btn.dataset.copyTarget);
+  if (codeEl) {
+    navigator.clipboard.writeText(codeEl.textContent);
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  }
+});
 
 window.alasChat = new ALASChat();

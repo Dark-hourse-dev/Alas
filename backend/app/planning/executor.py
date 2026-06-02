@@ -56,7 +56,7 @@ async def execute_plan(
     Returns:
         The updated plan with results.
     """
-    from backend.app.llm.tools import TOOL_FUNCTIONS
+    from backend.app.llm.legacy_tools import TOOL_FUNCTIONS
 
     plan.status = "executing"
     store_plan(plan)
@@ -124,7 +124,7 @@ async def execute_plan(
 
 def _execute_step(step: PlanStep) -> str:
     """Execute a single plan step using the tool registry."""
-    from backend.app.llm.tools import TOOL_FUNCTIONS
+    from backend.app.llm.legacy_tools import TOOL_FUNCTIONS
 
     tool_name = step.tool
     args = step.args or {}

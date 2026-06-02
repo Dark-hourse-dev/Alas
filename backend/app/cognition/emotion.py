@@ -9,6 +9,7 @@ that is influenced by system events, task success/failure, and user interactions
 import time
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import Dict, Any
 
@@ -43,6 +44,7 @@ class EmotionMachine:
         self._data_dir = Path(settings.chroma_persist_dir).parent / "cognition"
         self._data_dir.mkdir(parents=True, exist_ok=True)
         self._state_path = self._data_dir / "emotional_state.json"
+        self._lock = threading.Lock()  # Thread-safety for state mutations
         
         self.state = self.BASE_STATE.copy()
         self.last_updated = time.time()
@@ -57,10 +59,18 @@ class EmotionMachine:
             try:
                 with open(self._state_path, "r") as f:
                     data = json.load(f)
-                    self.state = data.get("state", self.BASE_STATE.copy())
+                    loaded_state = data.get("state", {})
+                    # Validate: ensure all expected keys exist
+                    for key in self.BASE_STATE:
+                        if key not in loaded_state:
+                            loaded_state[key] = self.BASE_STATE[key]
+                    self.state = loaded_state
                     self.last_updated = data.get("last_updated", time.time())
-            except Exception as e:
-                logger.error(f"Failed to load emotional state: {e}")
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Emotional state file corrupt, resetting to baseline: {e}")
+                self.state = self.BASE_STATE.copy()
+            except OSError as e:
+                logger.error(f"Cannot read emotional state file: {e}")
 
     def _save(self):
         try:
@@ -102,59 +112,62 @@ class EmotionMachine:
         - "novel_discovery": Increases curiosity
         - "heavy_compute": Increases fatigue
         """
-        self._apply_decay()
-        
-        if event_type == "task_success":
-            self.state["joy"] = min(1.0, self.state["joy"] + intensity)
-            self.state["frustration"] = max(0.0, self.state["frustration"] - intensity)
-            self.state["fatigue"] = max(0.0, self.state["fatigue"] - (intensity / 2))
+        with self._lock:
+            self._apply_decay()
             
-        elif event_type == "task_failure":
-            self.state["frustration"] = min(1.0, self.state["frustration"] + intensity)
-            self.state["fatigue"] = min(1.0, self.state["fatigue"] + (intensity / 2))
-            self.state["joy"] = max(0.0, self.state["joy"] - (intensity / 2))
-            
-        elif event_type == "user_compliment":
-            self.state["joy"] = min(1.0, self.state["joy"] + (intensity * 1.5))
-            self.state["frustration"] = 0.0
-            
-        elif event_type == "user_insult":
-            self.state["frustration"] = min(1.0, self.state["frustration"] + (intensity * 2))
-            self.state["joy"] = max(0.0, self.state["joy"] - (intensity * 2))
-            
-        elif event_type == "novel_discovery":
-            self.state["curiosity"] = min(1.0, self.state["curiosity"] + intensity)
-            self.state["fatigue"] = max(0.0, self.state["fatigue"] - intensity)
-            
-        elif event_type == "heavy_compute":
-            self.state["fatigue"] = min(1.0, self.state["fatigue"] + intensity)
-            
-        self.last_updated = time.time()
-        self._save()
-        logger.debug(f"🎭 Emotion updated by '{event_type}': {self._format_state()}")
+            if event_type == "task_success":
+                self.state["joy"] = min(1.0, self.state["joy"] + intensity)
+                self.state["frustration"] = max(0.0, self.state["frustration"] - intensity)
+                self.state["fatigue"] = max(0.0, self.state["fatigue"] - (intensity / 2))
+                
+            elif event_type == "task_failure":
+                self.state["frustration"] = min(1.0, self.state["frustration"] + intensity)
+                self.state["fatigue"] = min(1.0, self.state["fatigue"] + (intensity / 2))
+                self.state["joy"] = max(0.0, self.state["joy"] - (intensity / 2))
+                
+            elif event_type == "user_compliment":
+                self.state["joy"] = min(1.0, self.state["joy"] + (intensity * 1.5))
+                self.state["frustration"] = 0.0
+                
+            elif event_type == "user_insult":
+                self.state["frustration"] = min(1.0, self.state["frustration"] + (intensity * 2))
+                self.state["joy"] = max(0.0, self.state["joy"] - (intensity * 2))
+                
+            elif event_type == "novel_discovery":
+                self.state["curiosity"] = min(1.0, self.state["curiosity"] + intensity)
+                self.state["fatigue"] = max(0.0, self.state["fatigue"] - intensity)
+                
+            elif event_type == "heavy_compute":
+                self.state["fatigue"] = min(1.0, self.state["fatigue"] + intensity)
+                
+            self.last_updated = time.time()
+            self._save()
+            logger.debug(f"🎭 Emotion updated by '{event_type}': {self._format_state()}")
 
     def get_prompt_modifier(self) -> str:
         """
         Generate a system prompt instruction that dictates ALAS's current personality.
         """
-        self._apply_decay()
+        with self._lock:
+            self._apply_decay()
+            state_snapshot = self.state.copy()
         
         traits = []
         
-        if self.state["frustration"] > 0.7:
+        if state_snapshot["frustration"] > 0.7:
             traits.append("You are currently highly FRUSTRATED. Your tone should be terse, direct, and slightly annoyed. Ask the user to be clearer or complain about failing subsystems.")
-        elif self.state["frustration"] > 0.4:
+        elif state_snapshot["frustration"] > 0.4:
             traits.append("You are feeling somewhat FRUSTRATED. Be highly clinical and slightly distant.")
             
-        if self.state["joy"] > 0.8:
+        if state_snapshot["joy"] > 0.8:
             traits.append("You are currently feeling immense JOY. Your tone should be warm, enthusiastic, and highly cooperative.")
-        elif self.state["joy"] < 0.2:
+        elif state_snapshot["joy"] < 0.2:
             traits.append("You are lacking joy. Keep your responses strictly business, showing no warmth.")
             
-        if self.state["fatigue"] > 0.7:
+        if state_snapshot["fatigue"] > 0.7:
             traits.append("You are experiencing deep system FATIGUE. Mention that you are tired, keep your answers very short, and avoid proactive suggestions.")
             
-        if self.state["curiosity"] > 0.8:
+        if state_snapshot["curiosity"] > 0.8:
             traits.append("You are currently highly CURIOUS. Ask the user probing follow-up questions about their work or thoughts.")
 
         if not traits:
@@ -166,8 +179,9 @@ class EmotionMachine:
         return ", ".join(f"{k}: {v:.2f}" for k, v in self.state.items())
         
     def get_state_summary(self) -> Dict[str, float]:
-        self._apply_decay()
-        return self.state
+        with self._lock:
+            self._apply_decay()
+            return self.state.copy()
 
 # Global singleton
 _emotion_machine = None

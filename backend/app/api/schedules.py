@@ -78,7 +78,7 @@ async def create_schedule(request: ScheduleCreate):
         command = request.action_params.get("command", "echo 'No command specified'")
 
         async def callback():
-            from backend.app.llm.tools import execute_shell
+            from backend.app.llm.legacy_tools import execute_shell
             result = execute_shell(command)
             from backend.app.proactive.notifier import get_notifier
             get_notifier().send(

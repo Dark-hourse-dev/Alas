@@ -16,6 +16,7 @@ class InternalMonologue:
     def __init__(self):
         self.is_running = False
         self._thread = None
+        self._lock = threading.Lock()
         self.current_thought = "I am currently idle."
         self.thought_history = []
         
@@ -47,11 +48,12 @@ class InternalMonologue:
                     model="phi3"  # Use lightweight fallback model for background task to save resources
                 )
                 
-                self.current_thought = thought.strip()
-                self.thought_history.append({"time": time.time(), "thought": self.current_thought})
-                
-                if len(self.thought_history) > 100:
-                    self.thought_history.pop(0)
+                with self._lock:
+                    self.current_thought = thought.strip()
+                    self.thought_history.append({"time": time.time(), "thought": self.current_thought})
+                    
+                    if len(self.thought_history) > 100:
+                        self.thought_history.pop(0)
                     
                 logger.debug(f"🤔 Thought: {self.current_thought}")
                 
@@ -74,7 +76,8 @@ class InternalMonologue:
             self._thread.join(timeout=2.0)
 
     def get_latest_thought(self) -> str:
-        return self.current_thought
+        with self._lock:
+            return self.current_thought
 
 # Global Singleton
 _monologue = InternalMonologue()

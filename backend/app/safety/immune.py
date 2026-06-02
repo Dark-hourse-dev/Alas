@@ -92,8 +92,8 @@ class ImmuneSystem:
             with open(crash_file, "w") as f:
                 f.write(tb_str)
             logger.info(f"Crash report saved to {crash_file}. Immune System will attempt to patch on next boot.")
-        except Exception as e:
-            logger.error(f"Immune System failed to log crash: {e}")
+        except OSError as e:
+            logger.error(f"Immune System failed to log crash (disk/permissions issue): {e}")
 
     async def _diagnose_and_heal(self, tb_str: str):
         """

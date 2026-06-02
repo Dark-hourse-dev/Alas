@@ -13,8 +13,10 @@ class ALASMemory {
       if (!res.ok) return;
       const data = await res.json();
       this.totalMemories = data.episodic?.total_memories || 0;
-      document.getElementById('stat-episodic').textContent = this.totalMemories;
-      document.getElementById('memory-count').textContent = this.totalMemories;
+      const statEp = document.getElementById('stat-episodic');
+      if (statEp) statEp.textContent = this.totalMemories;
+      const memCount = document.getElementById('memory-count');
+      if (memCount) memCount.textContent = this.totalMemories;
     } catch (e) {}
   }
 
@@ -48,12 +50,15 @@ class ALASMemory {
 
   updateCount(count) {
     this.totalMemories = count;
-    document.getElementById('stat-episodic').textContent = count;
-    document.getElementById('memory-count').textContent = count;
+    const statEp = document.getElementById('stat-episodic');
+    if (statEp) statEp.textContent = count;
+    const memCount = document.getElementById('memory-count');
+    if (memCount) memCount.textContent = count;
   }
 
   updateSessionCount(count) {
-    document.getElementById('stat-session').textContent = count;
+    const statSession = document.getElementById('stat-session');
+    if (statSession) statSession.textContent = count;
   }
 }
 

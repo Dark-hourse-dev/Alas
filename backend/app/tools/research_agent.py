@@ -44,7 +44,7 @@ def research_topic(
     Returns:
         Research report summary.
     """
-    from backend.app.llm.tools import search_web, read_webpage
+    from backend.app.llm.legacy_tools import search_web, read_webpage
 
     depth_map = {"quick": 3, "standard": 5, "deep": 8}
     num_sources = depth_map.get(depth, 5)

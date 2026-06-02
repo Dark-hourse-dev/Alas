@@ -267,24 +267,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Memory Search Modal ---
   const memModal = document.getElementById('memory-search-modal');
-  document.getElementById('btn-search-memory').addEventListener('click', () => {
-    memModal.style.display = 'flex';
-    document.getElementById('memory-search-input').focus();
-  });
-  document.getElementById('btn-close-memory-modal').addEventListener('click', () => {
-    memModal.style.display = 'none';
-  });
+  const btnSearchMemory = document.getElementById('btn-search-memory');
+  if (btnSearchMemory) {
+    btnSearchMemory.addEventListener('click', () => {
+      memModal.style.display = 'flex';
+      document.getElementById('memory-search-input').focus();
+    });
+  }
+  const btnCloseMemoryModal = document.getElementById('btn-close-memory-modal');
+  if (btnCloseMemoryModal) {
+    btnCloseMemoryModal.addEventListener('click', () => {
+      memModal.style.display = 'none';
+    });
+  }
 
   let searchTimeout;
-  document.getElementById('memory-search-input').addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(async () => {
-      const q = e.target.value.trim();
-      if (q.length < 2) return;
-      const results = await memory.search(q);
-      memory.renderSearchResults(results);
-    }, 400);
-  });
+  const memorySearchInput = document.getElementById('memory-search-input');
+  if (memorySearchInput) {
+    memorySearchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        const q = e.target.value.trim();
+        if (q.length < 2) return;
+        const results = await memory.search(q);
+        memory.renderSearchResults(results);
+      }, 400);
+    });
+  }
 
   // --- Unified Settings Modal ---
   const btnSettingsNav = document.getElementById('btn-nav-settings');
@@ -379,25 +388,49 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) return;
       const p = await res.json();
       const name = p.preferred_name || p.name || 'New User';
-      document.getElementById('profile-name').textContent = name;
-      document.getElementById('profile-style').textContent = p.communication_style || 'balanced';
+      
+      // Update profile card elements (if they exist)
+      const profileNameEl = document.getElementById('profile-name');
+      if (profileNameEl) profileNameEl.textContent = name;
+      
+      const profileStyleEl = document.getElementById('profile-style');
+      if (profileStyleEl) profileStyleEl.textContent = p.communication_style || 'balanced';
       
       const savedAvatar = localStorage.getItem('alas_custom_avatar');
-      document.getElementById('profile-avatar').querySelector('span').textContent = savedAvatar || name[0]?.toUpperCase() || '?';
+      const avatarEl = document.getElementById('profile-avatar');
+      if (avatarEl) {
+        const avatarSpan = avatarEl.querySelector('span');
+        if (avatarSpan) avatarSpan.textContent = savedAvatar || name[0]?.toUpperCase() || '?';
+      }
       
-      document.getElementById('stat-interactions').textContent = p.interaction_count || 0;
+      const statEl = document.getElementById('stat-interactions');
+      if (statEl) statEl.textContent = p.interaction_count || 0;
     } catch (e) {}
   }
 
-  // --- Custom Avatar ---
-  document.getElementById('profile-avatar').addEventListener('click', () => {
-    const current = document.getElementById('profile-avatar').querySelector('span').textContent;
-    const newAvatar = prompt("Enter a custom emoji or initial for your avatar:", current);
-    if (newAvatar) {
-        localStorage.setItem('alas_custom_avatar', newAvatar);
-        document.getElementById('profile-avatar').querySelector('span').textContent = newAvatar;
-    }
-  });
+  // --- Profile Avatar Click — Opens Settings to Profile Tab ---
+  const profileAvatarBtn = document.getElementById('profile-avatar');
+  if (profileAvatarBtn) {
+    profileAvatarBtn.addEventListener('click', () => {
+      // Open settings modal and switch to Profile tab
+      openSettings();
+      // Activate profile tab
+      document.querySelectorAll('.settings-tab').forEach(t => {
+        t.classList.remove('active');
+        t.style.borderLeftColor = 'transparent';
+        t.style.color = 'var(--text-secondary)';
+      });
+      document.querySelectorAll('.settings-pane').forEach(p => p.style.display = 'none');
+      const profileTab = document.querySelector('.settings-tab[data-tab="profile"]');
+      if (profileTab) {
+        profileTab.classList.add('active');
+        profileTab.style.borderLeftColor = 'var(--accent-primary)';
+        profileTab.style.color = 'var(--text-primary)';
+      }
+      const profilePane = document.getElementById('pane-profile');
+      if (profilePane) profilePane.style.display = 'block';
+    });
+  }
 
   loadProfile();
   memory.fetchStats();
